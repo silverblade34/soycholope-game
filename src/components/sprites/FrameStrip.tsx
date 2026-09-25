@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useMemo } from 'react';
-import { ActionConfig, FrameSlice } from './types';
-import { extractFrameDataUrl } from './slicerUtils';
-import { Film, Download } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { ActionConfig, FrameSlice, FrameOverride } from './types';
+import { extractFrameDataUrl, createAnimatedGif } from './slicerUtils';
+import { Film, Download, Sliders, RotateCcw, Sparkles } from 'lucide-react';
 
 interface FrameStripProps {
     action: ActionConfig;
@@ -11,6 +11,7 @@ interface FrameStripProps {
     activeFrameIndex: number;
     onSelectFrame: (index: number) => void;
     imageElement: HTMLImageElement | null;
+    onUpdateFrameOverride: (frameIndex: number, override: Partial<FrameOverride> | null) => void;
 }
 
 export const FrameStrip: React.FC<FrameStripProps> = ({
@@ -18,8 +19,11 @@ export const FrameStrip: React.FC<FrameStripProps> = ({
     slices,
     activeFrameIndex,
     onSelectFrame,
-    imageElement
+    imageElement,
+    onUpdateFrameOverride
 }) => {
+    const [isGeneratingGif, setIsGeneratingGif] = useState<boolean>(false);
+
     // Generar thumbnails sincrónicamente con useMemo cuando cambien slices o la imagen
     const frameThumbnails = useMemo(() => {
         if (!imageElement || slices.length === 0 || !imageElement.complete || imageElement.naturalWidth === 0) {
@@ -50,7 +54,34 @@ export const FrameStrip: React.FC<FrameStripProps> = ({
         a.click();
     };
 
+    const handleDownloadGif = async () => {
+        if (!imageElement || slices.length === 0) return;
+        setIsGeneratingGif(true);
+        try {
+            const gifDataUrl = await createAnimatedGif(imageElement, slices, action.fps, action.loop);
+            if (gifDataUrl) {
+                const a = document.createElement('a');
+                a.href = gifDataUrl;
+                a.download = `${action.name}.gif`;
+                a.click();
+            }
+        } catch (err) {
+            console.error('Error al generar GIF:', err);
+        } finally {
+            setIsGeneratingGif(false);
+        }
+    };
+
     if (slices.length === 0) return null;
+
+    const currentSlice = slices[activeFrameIndex] || slices[0];
+    const currentOverride = action.frameOverrides?.[activeFrameIndex];
+
+    const adjustValue = (field: 'x' | 'width' | 'y' | 'height', delta: number) => {
+        const curVal = currentSlice[field];
+        const newVal = Math.max(1, curVal + delta);
+        onUpdateFrameOverride(activeFrameIndex, { [field]: newVal });
+    };
 
     return (
         <div
@@ -61,19 +92,45 @@ export const FrameStrip: React.FC<FrameStripProps> = ({
                 padding: '16px',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '12px'
+                gap: '14px'
             }}
         >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
                 <span style={{ fontSize: '12px', fontWeight: 700, color: '#f8fafc', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <Film size={15} color="#60a5fa" />
-                    <span>Tira de Frames Recortados Individuales ({slices.length})</span>
+                    <span>Tira de Frames ({slices.length})</span>
                 </span>
-                <span style={{ fontSize: '11px', color: '#64748b' }}>
-                    Haz clic en un frame para pausar e inspeccionarlo
-                </span>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <button
+                        onClick={handleDownloadGif}
+                        disabled={isGeneratingGif}
+                        title="Exportar animación activa como GIF animado con fondo transparente"
+                        style={{
+                            background: 'rgba(59, 130, 246, 0.15)',
+                            border: '1px solid rgba(59, 130, 246, 0.4)',
+                            color: '#60a5fa',
+                            borderRadius: '6px',
+                            padding: '4px 10px',
+                            fontSize: '11px',
+                            fontWeight: 600,
+                            cursor: isGeneratingGif ? 'not-allowed' : 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '5px'
+                        }}
+                    >
+                        <Sparkles size={12} />
+                        <span>{isGeneratingGif ? 'Generando GIF...' : 'Exportar GIF'}</span>
+                    </button>
+                    <span style={{ fontSize: '11px', color: '#64748b' }}>
+                        Haz clic en un frame para ajustar su corte
+                    </span>
+                </div>
             </div>
 
+            {/* Galería de Frames */}
             <div
                 style={{
                     display: 'flex',
@@ -85,6 +142,7 @@ export const FrameStrip: React.FC<FrameStripProps> = ({
                 {slices.map((slice, idx) => {
                     const isActive = idx === activeFrameIndex;
                     const thumbUrl = frameThumbnails[idx];
+                    const hasOverride = Boolean(action.frameOverrides?.[idx]);
 
                     return (
                         <div
@@ -96,14 +154,35 @@ export const FrameStrip: React.FC<FrameStripProps> = ({
                                 alignItems: 'center',
                                 gap: '6px',
                                 background: isActive ? 'rgba(245, 158, 11, 0.12)' : '#0f172a',
-                                border: isActive ? '2px solid #f59e0b' : '1px solid #334155',
+                                border: isActive ? '2px solid #f59e0b' : hasOverride ? '1px dashed #3b82f6' : '1px solid #334155',
                                 borderRadius: '8px',
                                 padding: '8px',
                                 cursor: 'pointer',
                                 transition: 'all 0.15s ease',
-                                minWidth: '90px'
+                                minWidth: '95px',
+                                position: 'relative'
                             }}
                         >
+                            {hasOverride && (
+                                <span
+                                    title="Este frame tiene un corte manual personalizado"
+                                    style={{
+                                        position: 'absolute',
+                                        top: '4px',
+                                        left: '4px',
+                                        background: '#3b82f6',
+                                        color: '#fff',
+                                        fontSize: '8px',
+                                        fontWeight: 800,
+                                        padding: '1px 4px',
+                                        borderRadius: '3px',
+                                        zIndex: 2
+                                    }}
+                                >
+                                    EDIT
+                                </span>
+                            )}
+
                             <div
                                 style={{
                                     width: '80px',
@@ -143,6 +222,9 @@ export const FrameStrip: React.FC<FrameStripProps> = ({
                                 >
                                     F{idx + 1}
                                 </span>
+                                <span style={{ fontSize: '9px', color: '#64748b' }}>
+                                    {slice.width}px
+                                </span>
 
                                 <button
                                     onClick={(e) => handleDownloadFrame(idx, e)}
@@ -165,6 +247,134 @@ export const FrameStrip: React.FC<FrameStripProps> = ({
                     );
                 })}
             </div>
+
+            {/* Inspector de Ajuste Fino para el Frame Seleccionado */}
+            {currentSlice && (
+                <div
+                    style={{
+                        background: '#0f172a',
+                        border: '1px solid #1e293b',
+                        borderRadius: '8px',
+                        padding: '12px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '10px'
+                    }}
+                >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <Sliders size={13} color="#f59e0b" />
+                            <span style={{ fontSize: '12px', fontWeight: 700, color: '#f8fafc' }}>
+                                Ajuste Individual: Frame #{activeFrameIndex + 1}
+                            </span>
+                            {currentOverride && (
+                                <span style={{ fontSize: '10px', background: 'rgba(59, 130, 246, 0.2)', color: '#60a5fa', padding: '1px 6px', borderRadius: '4px' }}>
+                                    Personalizado
+                                </span>
+                            )}
+                        </div>
+
+                        {currentOverride && (
+                            <button
+                                onClick={() => onUpdateFrameOverride(activeFrameIndex, null)}
+                                style={{
+                                    background: 'transparent',
+                                    border: '1px solid #334155',
+                                    color: '#94a3b8',
+                                    borderRadius: '4px',
+                                    padding: '2px 8px',
+                                    fontSize: '10px',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '4px'
+                                }}
+                            >
+                                <RotateCcw size={10} />
+                                <span>Restablecer a automático</span>
+                            </button>
+                        )}
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px' }}>
+                        {/* Ancho */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <label style={{ fontSize: '11px', color: '#94a3b8' }}>Ancho de este frame (W):</label>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <button
+                                    onClick={() => adjustValue('width', -5)}
+                                    style={{ background: '#1e293b', border: '1px solid #334155', color: '#fff', borderRadius: '4px', padding: '4px 6px', fontSize: '11px', cursor: 'pointer' }}
+                                >
+                                    -5
+                                </button>
+                                <button
+                                    onClick={() => adjustValue('width', -1)}
+                                    style={{ background: '#1e293b', border: '1px solid #334155', color: '#fff', borderRadius: '4px', padding: '4px 6px', fontSize: '11px', cursor: 'pointer' }}
+                                >
+                                    -1
+                                </button>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    value={currentSlice.width}
+                                    onChange={(e) => onUpdateFrameOverride(activeFrameIndex, { width: parseInt(e.target.value) || currentSlice.width })}
+                                    style={{ width: '60px', background: '#1e293b', border: '1px solid #3b82f6', color: '#fbbf24', borderRadius: '4px', padding: '4px 6px', fontSize: '11px', fontWeight: 700, textAlign: 'center' }}
+                                />
+                                <button
+                                    onClick={() => adjustValue('width', +1)}
+                                    style={{ background: '#1e293b', border: '1px solid #334155', color: '#fff', borderRadius: '4px', padding: '4px 6px', fontSize: '11px', cursor: 'pointer' }}
+                                >
+                                    +1
+                                </button>
+                                <button
+                                    onClick={() => adjustValue('width', +5)}
+                                    style={{ background: '#1e293b', border: '1px solid #334155', color: '#fff', borderRadius: '4px', padding: '4px 6px', fontSize: '11px', cursor: 'pointer' }}
+                                >
+                                    +5
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Posición X */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <label style={{ fontSize: '11px', color: '#94a3b8' }}>Posición X de inicio:</label>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <button
+                                    onClick={() => adjustValue('x', -5)}
+                                    style={{ background: '#1e293b', border: '1px solid #334155', color: '#fff', borderRadius: '4px', padding: '4px 6px', fontSize: '11px', cursor: 'pointer' }}
+                                >
+                                    -5
+                                </button>
+                                <button
+                                    onClick={() => adjustValue('x', -1)}
+                                    style={{ background: '#1e293b', border: '1px solid #334155', color: '#fff', borderRadius: '4px', padding: '4px 6px', fontSize: '11px', cursor: 'pointer' }}
+                                >
+                                    -1
+                                </button>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    value={currentSlice.x}
+                                    onChange={(e) => onUpdateFrameOverride(activeFrameIndex, { x: parseInt(e.target.value) || 0 })}
+                                    style={{ width: '60px', background: '#1e293b', border: '1px solid #3b82f6', color: '#60a5fa', borderRadius: '4px', padding: '4px 6px', fontSize: '11px', fontWeight: 700, textAlign: 'center' }}
+                                />
+                                <button
+                                    onClick={() => adjustValue('x', +1)}
+                                    style={{ background: '#1e293b', border: '1px solid #334155', color: '#fff', borderRadius: '4px', padding: '4px 6px', fontSize: '11px', cursor: 'pointer' }}
+                                >
+                                    +1
+                                </button>
+                                <button
+                                    onClick={() => adjustValue('x', +5)}
+                                    style={{ background: '#1e293b', border: '1px solid #334155', color: '#fff', borderRadius: '4px', padding: '4px 6px', fontSize: '11px', cursor: 'pointer' }}
+                                >
+                                    +5
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

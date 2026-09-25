@@ -1,20 +1,22 @@
 {
   "characterName": "ruben",
-  "updatedAt": "2026-09-25T20:07:44.747Z",
+  "updatedAt": "2026-09-25T20:29:17.472Z",
   "actions": {
     "correr": {
       "name": "correr",
       "label": "CORRER",
       "frameCount": 5,
-      "frameWidth": 434,
-      "frameHeight": 724,
+      "frameWidth": 205,
+      "frameHeight": 341,
       "offsetX": 0,
       "offsetY": 0,
       "spacing": 0,
       "fps": 10,
       "loop": true,
+      "frameOverrides": {},
       "spriteSheet": "/sprites/ruben/correr/correr.png",
       "spriteSheetRoot": "/sprites/ruben/correr.png",
+      "gif": "/sprites/ruben/correr/correr.gif",
       "frames": [
         "/sprites/ruben/correr/frames/frame_1.png",
         "/sprites/ruben/correr/frames/frame_2.png",
@@ -23,25 +25,34 @@
         "/sprites/ruben/correr/frames/frame_5.png"
       ]
     },
-    "caminar": {
-      "name": "caminar",
-      "label": "CAMINAR",
+    "saltar": {
+      "name": "saltar",
+      "label": "SALTAR",
       "frameCount": 5,
       "frameWidth": 434,
       "frameHeight": 724,
       "offsetX": 0,
       "offsetY": 0,
       "spacing": 0,
-      "fps": 8,
+      "fps": 9,
       "loop": true,
-      "spriteSheet": "/sprites/ruben/caminar/caminar.png",
-      "spriteSheetRoot": "/sprites/ruben/caminar.png",
+      "frameOverrides": {
+        "1": {
+          "width": 464
+        },
+        "2": {
+          "x": 885
+        }
+      },
+      "spriteSheet": "/sprites/ruben/saltar/saltar.png",
+      "spriteSheetRoot": "/sprites/ruben/saltar.png",
+      "gif": "/sprites/ruben/saltar/saltar.gif",
       "frames": [
-        "/sprites/ruben/caminar/frames/frame_1.png",
-        "/sprites/ruben/caminar/frames/frame_2.png",
-        "/sprites/ruben/caminar/frames/frame_3.png",
-        "/sprites/ruben/caminar/frames/frame_4.png",
-        "/sprites/ruben/caminar/frames/frame_5.png"
+        "/sprites/ruben/saltar/frames/frame_1.png",
+        "/sprites/ruben/saltar/frames/frame_2.png",
+        "/sprites/ruben/saltar/frames/frame_3.png",
+        "/sprites/ruben/saltar/frames/frame_4.png",
+        "/sprites/ruben/saltar/frames/frame_5.png"
       ]
     }
   }

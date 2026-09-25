@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
-import { ActionConfig, CharacterData, DEFAULT_ACTIONS } from '@/components/sprites/types';
-import { calculateFrameSlices, extractFrameDataUrl } from '@/components/sprites/slicerUtils';
+import { ActionConfig, CharacterData, DEFAULT_ACTIONS, FrameOverride } from '@/components/sprites/types';
+import { calculateFrameSlices, extractFrameDataUrl, createAnimatedGif } from '@/components/sprites/slicerUtils';
 import { ActionSelector } from '@/components/sprites/ActionSelector';
 import { SpriteSheetUploader } from '@/components/sprites/SpriteSheetUploader';
 import { SpriteSlicer } from '@/components/sprites/SpriteSlicer';
@@ -32,7 +32,8 @@ export default function SpriteStudioPage() {
                 fps: item.defaultFps,
                 loop: item.loop,
                 totalWidth: 0,
-                totalHeight: 0
+                totalHeight: 0,
+                frameOverrides: {}
             };
         }
         return initial;
@@ -117,6 +118,32 @@ export default function SpriteStudioPage() {
         }));
     }, [activeActionKey]);
 
+    // Actualizar override individual de un frame específico (ej: ensanchar el frame 2)
+    const handleUpdateFrameOverride = useCallback((frameIndex: number, override: Partial<FrameOverride> | null) => {
+        setActions((prev) => {
+            const currentAction = prev[activeActionKey];
+            if (!currentAction) return prev;
+
+            const existingOverrides = { ...(currentAction.frameOverrides || {}) };
+            if (override === null) {
+                delete existingOverrides[frameIndex];
+            } else {
+                existingOverrides[frameIndex] = {
+                    ...existingOverrides[frameIndex],
+                    ...override
+                };
+            }
+
+            return {
+                ...prev,
+                [activeActionKey]: {
+                    ...currentAction,
+                    frameOverrides: existingOverrides
+                }
+            };
+        });
+    }, [activeActionKey]);
+
     // Manejar carga de nuevo archivo PNG
     const handleLoadNewImage = useCallback((file: File) => {
         const reader = new FileReader();
@@ -142,7 +169,8 @@ export default function SpriteStudioPage() {
                         frameHeight: autoH,
                         offsetX: 0,
                         offsetY: 0,
-                        spacing: 0
+                        spacing: 0,
+                        frameOverrides: {}
                     }
                 }));
                 setActiveImageElement(tempImg);
@@ -170,7 +198,8 @@ export default function SpriteStudioPage() {
                 fps: 10,
                 loop: true,
                 totalWidth: 0,
-                totalHeight: 0
+                totalHeight: 0,
+                frameOverrides: {}
             }
         }));
         setActiveActionKey(name);
@@ -202,7 +231,7 @@ export default function SpriteStudioPage() {
             const filesToSave: Record<string, string> = {};
             const cleanActionsMeta: Record<string, unknown> = {};
 
-            // Procesar cada acción para asegurar que tenemos el PNG base64 y sus frames recortados
+            // Procesar cada acción para asegurar que tenemos el PNG base64, frames recortados y GIF animado
             for (const [key, conf] of Object.entries(actions)) {
                 if (!conf.sheetUrl) continue;
 
@@ -257,6 +286,17 @@ export default function SpriteStudioPage() {
                     }
                 });
 
+                // 3. Generar GIF animado para la acción (como en reference_character: dash.gif, running.gif)
+                try {
+                    const gifBase64 = await createAnimatedGif(img, actionSlices, conf.fps, conf.loop);
+                    if (gifBase64) {
+                        filesToSave[`${key}/${key}.gif`] = gifBase64;
+                        filesToSave[`${key}.gif`] = gifBase64;
+                    }
+                } catch (gifErr) {
+                    console.warn(`No se pudo generar GIF para acción ${key}:`, gifErr);
+                }
+
                 // Si es la acción correr o idle, generar avatar character.png en la raíz
                 if (actionSlices.length > 0 && (key === 'correr' || key === 'idle' || !filesToSave['character.png'])) {
                     const avatarBase64 = extractFrameDataUrl(img, actionSlices[0]);
@@ -276,8 +316,10 @@ export default function SpriteStudioPage() {
                     spacing: conf.spacing,
                     fps: conf.fps,
                     loop: conf.loop,
+                    frameOverrides: conf.frameOverrides || {},
                     spriteSheet: `/sprites/${characterName}/${key}/${key}.png`,
                     spriteSheetRoot: `/sprites/${characterName}/${key}.png`,
+                    gif: `/sprites/${characterName}/${key}/${key}.gif`,
                     frames: framePaths
                 };
             }
@@ -300,7 +342,7 @@ export default function SpriteStudioPage() {
             if (res.ok) {
                 setSaveStatus({
                     success: true,
-                    message: `¡Guardado exitoso! Estructura creada en /public/sprites/${characterName}/ (con subcarpetas por acción y frames).`
+                    message: `¡Guardado exitoso! Estructura creada en /public/sprites/${characterName}/ (con GIFs animados, subcarpetas por acción y frames).`
                 });
             } else {
                 setSaveStatus({
@@ -550,6 +592,7 @@ export default function SpriteStudioPage() {
                             activeFrameIndex={activeFrameIndex}
                             onSelectFrame={(idx) => setActiveFrameIndex(idx)}
                             imageElement={activeImageElement}
+                            onUpdateFrameOverride={handleUpdateFrameOverride}
                         />
                     </div>
 

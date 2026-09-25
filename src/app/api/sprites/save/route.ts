@@ -23,7 +23,8 @@ export async function POST(req: NextRequest) {
                 const cleanBase64 = base64Data.replace(/^data:image\/\w+;base64,/, '');
                 const buffer = Buffer.from(cleanBase64, 'base64');
 
-                const safeFilename = filename.endsWith('.png') ? filename : `${filename}.png`;
+                const hasExt = filename.endsWith('.png') || filename.endsWith('.gif') || filename.endsWith('.json');
+                const safeFilename = hasExt ? filename : `${filename}.png`;
                 const filePath = path.join(targetDir, safeFilename);
 
                 await fs.mkdir(path.dirname(filePath), { recursive: true });

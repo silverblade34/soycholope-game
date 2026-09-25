@@ -6,6 +6,13 @@ export interface FrameSlice {
     height: number;
 }
 
+export interface FrameOverride {
+    x?: number;
+    y?: number;
+    width?: number;
+    height?: number;
+}
+
 export interface ActionConfig {
     name: string;
     label: string;
@@ -21,6 +28,7 @@ export interface ActionConfig {
     loop: boolean;
     totalWidth: number;
     totalHeight: number;
+    frameOverrides?: Record<number, FrameOverride>;
 }
 
 export interface CharacterData {
