@@ -18,7 +18,8 @@ export async function GET() {
             exists: pngFiles.length > 0,
             files: pngFiles
         });
-    } catch (err: any) {
-        return NextResponse.json({ exists: false, files: [], error: err.message });
+    } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : 'Error desconocido';
+        return NextResponse.json({ exists: false, files: [], error: msg });
     }
 }

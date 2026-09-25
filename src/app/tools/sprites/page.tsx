@@ -9,10 +9,13 @@ import { SpriteSheetUploader } from '@/components/sprites/SpriteSheetUploader';
 import { SpriteSlicer } from '@/components/sprites/SpriteSlicer';
 import { AnimationPlayer } from '@/components/sprites/AnimationPlayer';
 import { FrameStrip } from '@/components/sprites/FrameStrip';
-import { Film, Download, Save, Gamepad2, User, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Film, Download, Save, Gamepad2, User, Loader2, CheckCircle2, AlertCircle, Plus, Check, X } from 'lucide-react';
 
 export default function SpriteStudioPage() {
-    const [characterName, setCharacterName] = useState<string>('cholo');
+    const [characterName, setCharacterName] = useState<string>('ruben');
+    const [availableCharacters, setAvailableCharacters] = useState<string[]>(['ruben', 'cholo', 'ladron']);
+    const [isCreatingChar, setIsCreatingChar] = useState<boolean>(false);
+    const [newCharName, setNewCharName] = useState<string>('');
 
     // Inicializar diccionario de acciones predeterminadas
     const [actions, setActions] = useState<Record<string, ActionConfig>>(() => {
@@ -49,6 +52,205 @@ export default function SpriteStudioPage() {
 
     const activeAction = actions[activeActionKey] || actions['correr'];
 
+    // Cargar acciones y metadata guardadas de un personaje desde el servidor
+    const loadCharacterData = useCallback(async (charName: string) => {
+        try {
+            const res = await fetch(`/api/sprites/characters?character=${encodeURIComponent(charName)}`);
+            const json = await res.json();
+
+            if (typeof window !== 'undefined') {
+                localStorage.setItem('sprite_studio_last_character', charName);
+            }
+
+            // Construir acciones base limpias
+            const merged: Record<string, ActionConfig> = {};
+            for (const item of DEFAULT_ACTIONS) {
+                merged[item.name] = {
+                    name: item.name,
+                    label: item.label,
+                    icon: item.icon,
+                    sheetUrl: '',
+                    frameCount: 5,
+                    frameWidth: 0,
+                    frameHeight: 0,
+                    offsetX: 0,
+                    offsetY: 0,
+                    spacing: 0,
+                    fps: item.defaultFps,
+                    loop: item.loop,
+                    totalWidth: 0,
+                    totalHeight: 0,
+                    frameOverrides: {},
+                    frames: [],
+                    gif: ''
+                };
+            }
+
+            // Si hay datos guardados en disco para este personaje, fusionarlos
+            if (json.data && json.data.actions) {
+                interface RawActionMeta {
+                    name?: string;
+                    label?: string;
+                    frameCount?: number;
+                    frameWidth?: number;
+                    frameHeight?: number;
+                    offsetX?: number;
+                    offsetY?: number;
+                    spacing?: number;
+                    fps?: number;
+                    loop?: boolean;
+                    frameOverrides?: Record<number, FrameOverride>;
+                    spriteSheet?: string;
+                    spriteSheetRoot?: string;
+                    gif?: string;
+                    frames?: string[];
+                    totalWidth?: number;
+                    totalHeight?: number;
+                }
+
+                for (const [key, rawConf] of Object.entries(json.data.actions as Record<string, RawActionMeta>)) {
+                    const count = rawConf.frameCount || (rawConf.frames?.length ? rawConf.frames.length : 5);
+                    const totalW = rawConf.totalWidth || (rawConf.frameWidth ? rawConf.frameWidth * count : 0);
+                    const totalH = rawConf.totalHeight || rawConf.frameHeight || 0;
+                    const frameW = rawConf.frameWidth || (totalW > 0 ? Math.round(totalW / count) : 0);
+                    const frameH = rawConf.frameHeight || totalH;
+
+                    merged[key] = {
+                        name: rawConf.name || key,
+                        label: rawConf.label || key.toUpperCase(),
+                        icon: '',
+                        sheetUrl: rawConf.spriteSheet || rawConf.spriteSheetRoot || `/sprites/${charName}/${key}/${key}.png`,
+                        frameCount: count,
+                        frameWidth: frameW,
+                        frameHeight: frameH,
+                        offsetX: rawConf.offsetX || 0,
+                        offsetY: rawConf.offsetY || 0,
+                        spacing: rawConf.spacing || 0,
+                        fps: rawConf.fps || 10,
+                        loop: rawConf.loop !== undefined ? rawConf.loop : true,
+                        totalWidth: totalW,
+                        totalHeight: totalH,
+                        frameOverrides: rawConf.frameOverrides || {},
+                        frames: rawConf.frames || [],
+                        gif: rawConf.gif || ''
+                    };
+                }
+
+                const actionsWithSprites = Object.keys(json.data.actions).filter(
+                    (k) => Boolean(merged[k]?.sheetUrl) || (merged[k]?.frames && merged[k].frames!.length > 0)
+                );
+                if (actionsWithSprites.length > 0) {
+                    setActiveActionKey(actionsWithSprites[0]);
+                }
+            }
+
+            setActions(merged);
+            setActiveFrameIndex(0);
+        } catch (err) {
+            console.error('Error al cargar datos del personaje:', err);
+        }
+    }, []);
+
+    // Al montar la página, listar personajes guardados y cargar automáticamente el último
+    useEffect(() => {
+        let isMounted = true;
+
+        const initCharacters = async () => {
+            try {
+                const res = await fetch('/api/sprites/characters');
+                const json = await res.json();
+                if (!isMounted) return;
+
+                const serverChars: string[] = json.characters || [];
+                let localChars: string[] = [];
+                if (typeof window !== 'undefined') {
+                    try {
+                        localChars = JSON.parse(localStorage.getItem('sprite_studio_characters') || '[]');
+                    } catch {
+                        localChars = [];
+                    }
+                }
+
+                const combined = Array.from(new Set([...serverChars, ...localChars])).filter(Boolean).sort();
+                const finalChars = combined.length > 0 ? combined : ['ruben'];
+                setAvailableCharacters(finalChars);
+
+                if (typeof window !== 'undefined') {
+                    localStorage.setItem('sprite_studio_characters', JSON.stringify(finalChars));
+                }
+
+                const savedChar = typeof window !== 'undefined' ? localStorage.getItem('sprite_studio_last_character') : null;
+                const initial = savedChar && finalChars.includes(savedChar)
+                    ? savedChar
+                    : finalChars.includes('ruben')
+                    ? 'ruben'
+                    : finalChars[0];
+
+                setCharacterName(initial);
+                loadCharacterData(initial);
+            } catch (err) {
+                console.error('Error al consultar lista de personajes:', err);
+            }
+        };
+
+        initCharacters();
+
+        return () => {
+            isMounted = false;
+        };
+    }, [loadCharacterData]);
+
+    const handleSelectCharacter = (name: string) => {
+        setCharacterName(name);
+        loadCharacterData(name);
+    };
+
+    const handleCreateNewCharacter = () => {
+        const clean = newCharName.trim().toLowerCase().replace(/\s+/g, '_');
+        if (!clean) {
+            setIsCreatingChar(false);
+            return;
+        }
+
+        const updated = Array.from(new Set([...availableCharacters, clean])).sort();
+        setAvailableCharacters(updated);
+        setCharacterName(clean);
+        setNewCharName('');
+        setIsCreatingChar(false);
+
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('sprite_studio_characters', JSON.stringify(updated));
+            localStorage.setItem('sprite_studio_last_character', clean);
+        }
+
+        // Acciones base en blanco para el nuevo personaje
+        const fresh: Record<string, ActionConfig> = {};
+        for (const item of DEFAULT_ACTIONS) {
+            fresh[item.name] = {
+                name: item.name,
+                label: item.label,
+                icon: item.icon,
+                sheetUrl: '',
+                frameCount: 5,
+                frameWidth: 0,
+                frameHeight: 0,
+                offsetX: 0,
+                offsetY: 0,
+                spacing: 0,
+                fps: item.defaultFps,
+                loop: item.loop,
+                totalWidth: 0,
+                totalHeight: 0,
+                frameOverrides: {},
+                frames: [],
+                gif: ''
+            };
+        }
+        setActions(fresh);
+        setActiveActionKey('correr');
+        setActiveImageElement(null);
+    };
+
     // Cargar imagen en memoria cuando cambie sheetUrl de la acción activa
     useEffect(() => {
         let isMounted = true;
@@ -71,23 +273,24 @@ export default function SpriteStudioPage() {
             if (!isMounted) return;
             setActiveImageElement(img);
 
-            // Si los datos de ancho/alto no estaban fijados, calcularlos automáticamente
-            if (activeAction.totalWidth === 0 || activeAction.frameWidth === 0) {
-                const count = activeAction.frameCount || 5;
+            setActions((prev) => {
+                const current = prev[activeActionKey];
+                if (!current) return prev;
+                const count = current.frameCount || 5;
                 const autoW = Math.round(img.naturalWidth / count);
                 const autoH = img.naturalHeight;
 
-                setActions((prev) => ({
+                return {
                     ...prev,
                     [activeActionKey]: {
-                        ...prev[activeActionKey],
+                        ...current,
                         totalWidth: img.naturalWidth,
                         totalHeight: img.naturalHeight,
-                        frameWidth: autoW,
-                        frameHeight: autoH
+                        frameWidth: current.frameWidth > 0 ? current.frameWidth : autoW,
+                        frameHeight: current.frameHeight > 0 ? current.frameHeight : autoH
                     }
-                }));
-            }
+                };
+            });
         };
 
         img.onerror = () => {
@@ -99,7 +302,7 @@ export default function SpriteStudioPage() {
         return () => {
             isMounted = false;
         };
-    }, [activeAction?.sheetUrl, activeActionKey, activeAction?.totalWidth, activeAction?.frameWidth, activeAction?.frameCount]);
+    }, [activeAction?.sheetUrl, activeActionKey]);
 
     // Recalcular cortes de frames en tiempo real
     const slices = useMemo(() => {
@@ -316,6 +519,8 @@ export default function SpriteStudioPage() {
                     spacing: conf.spacing,
                     fps: conf.fps,
                     loop: conf.loop,
+                    totalWidth: conf.totalWidth || (conf.frameWidth ? conf.frameWidth * conf.frameCount : 0),
+                    totalHeight: conf.totalHeight || conf.frameHeight || 0,
                     frameOverrides: conf.frameOverrides || {},
                     spriteSheet: `/sprites/${characterName}/${key}/${key}.png`,
                     spriteSheetRoot: `/sprites/${characterName}/${key}.png`,
@@ -344,6 +549,19 @@ export default function SpriteStudioPage() {
                     success: true,
                     message: `¡Guardado exitoso! Estructura creada en /public/sprites/${characterName}/ (con GIFs animados, subcarpetas por acción y frames).`
                 });
+
+                // Actualizar lista en cache local y estado de disponibles
+                setAvailableCharacters((prev) => {
+                    const nextList = Array.from(new Set([...prev, characterName])).sort();
+                    if (typeof window !== 'undefined') {
+                        localStorage.setItem('sprite_studio_characters', JSON.stringify(nextList));
+                        localStorage.setItem('sprite_studio_last_character', characterName);
+                    }
+                    return nextList;
+                });
+
+                // Re-sincronizar con el servidor para que los metadatos y frames queden 100% autocompletados
+                loadCharacterData(characterName);
             } else {
                 setSaveStatus({
                     success: false,
@@ -419,21 +637,111 @@ export default function SpriteStudioPage() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <User size={13} color="#94a3b8" />
                         <span style={{ fontSize: '11px', color: '#94a3b8' }}>Personaje:</span>
-                        <input
-                            type="text"
-                            value={characterName}
-                            onChange={(e) => setCharacterName(e.target.value.toLowerCase().trim())}
-                            style={{
-                                background: '#1e293b',
-                                border: '1px solid #334155',
-                                color: '#fbbf24',
-                                borderRadius: '6px',
-                                padding: '5px 10px',
-                                fontSize: '12px',
-                                fontWeight: 700,
-                                width: '100px'
-                            }}
-                        />
+                        {!isCreatingChar ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <select
+                                    value={characterName}
+                                    onChange={(e) => {
+                                        if (e.target.value === '__new__') {
+                                            setIsCreatingChar(true);
+                                        } else {
+                                            handleSelectCharacter(e.target.value);
+                                        }
+                                    }}
+                                    style={{
+                                        background: '#1e293b',
+                                        border: '1px solid #334155',
+                                        color: '#fbbf24',
+                                        borderRadius: '6px',
+                                        padding: '5px 10px',
+                                        fontSize: '12px',
+                                        fontWeight: 700,
+                                        cursor: 'pointer'
+                                    }}
+                                >
+                                    {availableCharacters.map((c) => (
+                                        <option key={c} value={c}>
+                                            {c}
+                                        </option>
+                                    ))}
+                                    <option value="__new__">+ Nuevo Personaje...</option>
+                                </select>
+                                <button
+                                    onClick={() => setIsCreatingChar(true)}
+                                    title="Crear un nuevo personaje"
+                                    style={{
+                                        background: 'rgba(59, 130, 246, 0.15)',
+                                        border: '1px solid rgba(59, 130, 246, 0.4)',
+                                        color: '#60a5fa',
+                                        borderRadius: '6px',
+                                        padding: '5px 8px',
+                                        fontSize: '11px',
+                                        fontWeight: 600,
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '4px'
+                                    }}
+                                >
+                                    <Plus size={12} />
+                                    <span>Nuevo</span>
+                                </button>
+                            </div>
+                        ) : (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <input
+                                    type="text"
+                                    placeholder="Nombre personaje"
+                                    value={newCharName}
+                                    onChange={(e) => setNewCharName(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') handleCreateNewCharacter();
+                                        if (e.key === 'Escape') setIsCreatingChar(false);
+                                    }}
+                                    autoFocus
+                                    style={{
+                                        background: '#1e293b',
+                                        border: '1px solid #3b82f6',
+                                        color: '#fbbf24',
+                                        borderRadius: '6px',
+                                        padding: '5px 8px',
+                                        fontSize: '12px',
+                                        fontWeight: 700,
+                                        width: '120px'
+                                    }}
+                                />
+                                <button
+                                    onClick={handleCreateNewCharacter}
+                                    title="Confirmar"
+                                    style={{
+                                        background: '#3b82f6',
+                                        border: 'none',
+                                        color: '#fff',
+                                        borderRadius: '5px',
+                                        padding: '5px 8px',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center'
+                                    }}
+                                >
+                                    <Check size={12} />
+                                </button>
+                                <button
+                                    onClick={() => setIsCreatingChar(false)}
+                                    title="Cancelar"
+                                    style={{
+                                        background: 'transparent',
+                                        border: 'none',
+                                        color: '#94a3b8',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center'
+                                    }}
+                                >
+                                    <X size={12} />
+                                </button>
+                            </div>
+                        )}
                     </div>
 
                     <button

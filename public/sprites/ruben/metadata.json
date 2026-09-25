@@ -1,18 +1,20 @@
 {
   "characterName": "ruben",
-  "updatedAt": "2026-09-25T20:29:17.472Z",
+  "updatedAt": "2026-09-25T20:55:52.079Z",
   "actions": {
     "correr": {
       "name": "correr",
       "label": "CORRER",
       "frameCount": 5,
-      "frameWidth": 205,
+      "frameWidth": 201,
       "frameHeight": 341,
       "offsetX": 0,
       "offsetY": 0,
       "spacing": 0,
       "fps": 10,
       "loop": true,
+      "totalWidth": 1024,
+      "totalHeight": 341,
       "frameOverrides": {},
       "spriteSheet": "/sprites/ruben/correr/correr.png",
       "spriteSheetRoot": "/sprites/ruben/correr.png",
@@ -23,6 +25,31 @@
         "/sprites/ruben/correr/frames/frame_3.png",
         "/sprites/ruben/correr/frames/frame_4.png",
         "/sprites/ruben/correr/frames/frame_5.png"
+      ]
+    },
+    "caminar": {
+      "name": "caminar",
+      "label": "CAMINAR",
+      "frameCount": 5,
+      "frameWidth": 434,
+      "frameHeight": 724,
+      "offsetX": 0,
+      "offsetY": 0,
+      "spacing": 0,
+      "fps": 10,
+      "loop": true,
+      "totalWidth": 2172,
+      "totalHeight": 724,
+      "frameOverrides": {},
+      "spriteSheet": "/sprites/ruben/caminar/caminar.png",
+      "spriteSheetRoot": "/sprites/ruben/caminar.png",
+      "gif": "/sprites/ruben/caminar/caminar.gif",
+      "frames": [
+        "/sprites/ruben/caminar/frames/frame_1.png",
+        "/sprites/ruben/caminar/frames/frame_2.png",
+        "/sprites/ruben/caminar/frames/frame_3.png",
+        "/sprites/ruben/caminar/frames/frame_4.png",
+        "/sprites/ruben/caminar/frames/frame_5.png"
       ]
     },
     "saltar": {
@@ -36,9 +63,12 @@
       "spacing": 0,
       "fps": 9,
       "loop": true,
+      "totalWidth": 2172,
+      "totalHeight": 724,
       "frameOverrides": {
         "1": {
-          "width": 464
+          "width": 449,
+          "x": 444
         },
         "2": {
           "x": 885

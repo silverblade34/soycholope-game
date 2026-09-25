@@ -44,10 +44,11 @@ export async function POST(req: NextRequest) {
             message: `Sprites guardados exitosamente en public/sprites/${character}`,
             savedFiles
         });
-    } catch (error: any) {
+    } catch (error: unknown) {
+        const msg = error instanceof Error ? error.message : 'Error desconocido';
         console.error('Error al guardar sprites:', error);
         return NextResponse.json(
-            { error: 'Error en el servidor al guardar sprites', details: error.message },
+            { error: 'Error en el servidor al guardar sprites', details: msg },
             { status: 500 }
         );
     }

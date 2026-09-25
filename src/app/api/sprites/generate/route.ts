@@ -80,11 +80,11 @@ Analiza la imagen adjunta en este plano de cuadrícula y responde ÚNICAMENTE co
             'gemini-3.8-flash'
         ];
         let resultText = '';
-        let lastError: any = null;
+        let lastError: unknown = null;
 
         for (const model of modelsToTry) {
             try {
-                const parts: any[] = [{ text: prompt }];
+                const parts: Array<{ text?: string; inlineData?: { mimeType: string; data: string } }> = [{ text: prompt }];
                 if (cleanBase64) {
                     parts.push({
                         inlineData: {
@@ -100,13 +100,14 @@ Analiza la imagen adjunta en este plano de cuadrícula y responde ÚNICAMENTE co
                     generationConfig: {
                         temperature: 0.3
                     }
-                } as any);
+                } as unknown as Parameters<typeof ai.models.generateContent>[0]);
 
                 resultText = response.text || '';
                 if (resultText) break;
-            } catch (err: any) {
+            } catch (err: unknown) {
                 lastError = err;
-                console.warn(`Fallo con modelo ${model}:`, err.message);
+                const errMsg = err instanceof Error ? err.message : String(err);
+                console.warn(`Fallo con modelo ${model}:`, errMsg);
                 // Si el modelo da 503 o 404, continúa al siguiente
             }
         }
@@ -177,7 +178,7 @@ Analiza la imagen adjunta en este plano de cuadrícula y responde ÚNICAMENTE co
                     { nombre: "saltar", fps: 8, frames_total: 4, descripcion: "Salto con zapatillas arriba y aterrizaje" },
                     { nombre: "ataque_tacle", fps: 10, frames_total: 4, descripcion: "Tacleada al choro para recuperar celular" }
                 ],
-                nota: lastError ? `Análisis generado con blueprint optimizado (API remota con alta demanda temporal: ${lastError.message?.slice(0, 100)})` : 'Listo'
+                nota: lastError ? `Análisis generado con blueprint optimizado (API remota con alta demanda temporal: ${lastError instanceof Error ? lastError.message.slice(0, 100) : String(lastError)})` : 'Listo'
             };
         }
 

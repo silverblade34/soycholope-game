@@ -29,6 +29,8 @@ export interface ActionConfig {
     totalWidth: number;
     totalHeight: number;
     frameOverrides?: Record<number, FrameOverride>;
+    frames?: string[];
+    gif?: string;
 }
 
 export interface CharacterData {

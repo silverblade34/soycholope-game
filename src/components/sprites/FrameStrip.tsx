@@ -141,7 +141,7 @@ export const FrameStrip: React.FC<FrameStripProps> = ({
             >
                 {slices.map((slice, idx) => {
                     const isActive = idx === activeFrameIndex;
-                    const thumbUrl = frameThumbnails[idx];
+                    const thumbUrl = frameThumbnails[idx] || (action.frames && action.frames[idx]) || '';
                     const hasOverride = Boolean(action.frameOverrides?.[idx]);
 
                     return (
