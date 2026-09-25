@@ -176,13 +176,25 @@ export default function CapituloUnoPage() {
             attack: new Image()
         };
 
+        const activeChar = process.env.NEXT_PUBLIC_DEFAULT_CHARACTER || 'ruben';
+
         assets.sky.src = '/fondo-cielo.png';
         assets.foreground.src = '/primer-plano.png';
-        assets.character.src = '/personaje-base.png';
-        assets.run.src = '/sprites/cholo/correr.png';
-        assets.idle.src = '/sprites/cholo/idle.png';
-        assets.jump.src = '/sprites/cholo/saltar.png';
-        assets.attack.src = '/sprites/cholo/ataque_tacle.png';
+        assets.character.src = `/sprites/${activeChar}/character.png`;
+
+        const setSrcWithFallback = (img: HTMLImageElement, primary: string, fallback: string) => {
+            img.onerror = () => {
+                if (!img.src.endsWith(fallback)) {
+                    img.src = fallback;
+                }
+            };
+            img.src = primary;
+        };
+
+        setSrcWithFallback(assets.run, `/sprites/${activeChar}/correr/correr.png`, `/sprites/${activeChar}/correr.png`);
+        setSrcWithFallback(assets.idle, `/sprites/${activeChar}/idle/idle.png`, `/sprites/${activeChar}/idle.png`);
+        setSrcWithFallback(assets.jump, `/sprites/${activeChar}/saltar/saltar.png`, `/sprites/${activeChar}/saltar.png`);
+        setSrcWithFallback(assets.attack, `/sprites/${activeChar}/atacar/atacar.png`, `/sprites/${activeChar}/atacar.png`);
 
         let charCrop = { x: 0, y: 0, w: 100, h: 100 };
 

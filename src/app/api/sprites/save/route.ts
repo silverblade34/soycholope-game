@@ -5,7 +5,8 @@ import path from 'path';
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
-        const { character = 'cholo', files, metadata } = body;
+        const defaultChar = process.env.NEXT_PUBLIC_DEFAULT_CHARACTER || process.env.DEFAULT_CHARACTER || 'ruben';
+        const { character = defaultChar, files, metadata } = body;
 
         if ((!files || typeof files !== 'object') && !metadata) {
             return NextResponse.json({ error: 'No se enviaron archivos ni metadata válidos' }, { status: 400 });

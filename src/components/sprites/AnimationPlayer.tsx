@@ -41,27 +41,32 @@ export const AnimationPlayer: React.FC<AnimationPlayerProps> = ({
 
     // Cache de imágenes limpiadas/personalizadas para los frames individuales
     const customImagesRef = useRef<Record<number, HTMLImageElement>>({});
+    const currentActionNameRef = useRef<string>(action.name);
 
     useEffect(() => {
+        currentActionNameRef.current = action.name;
+        // SIEMPRE vaciar completamente el cache al cambiar de acción o de overrides
+        customImagesRef.current = {};
+
         const overrides = action.frameOverrides;
-        if (!overrides) {
-            customImagesRef.current = {};
-            return;
-        }
+        if (!overrides) return;
+
+        const actionAtTrigger = action.name;
 
         Object.entries(overrides).forEach(([key, ov]) => {
             const idx = parseInt(key);
             if (ov.customImage) {
                 const img = new Image();
                 img.onload = () => {
-                    customImagesRef.current[idx] = img;
+                    // Solo guardar si seguimos en la misma acción que disparó la carga
+                    if (currentActionNameRef.current === actionAtTrigger) {
+                        customImagesRef.current[idx] = img;
+                    }
                 };
                 img.src = ov.customImage;
-            } else {
-                delete customImagesRef.current[idx];
             }
         });
-    }, [action.frameOverrides]);
+    }, [action.name, action.frameOverrides]);
 
     // Loop de renderizado continuo en Canvas
     useEffect(() => {

@@ -4,7 +4,8 @@ import path from 'path';
 
 export async function GET() {
     try {
-        const spritesDir = path.join(process.cwd(), 'public', 'sprites', 'cholo');
+        const defaultChar = process.env.NEXT_PUBLIC_DEFAULT_CHARACTER || process.env.DEFAULT_CHARACTER || 'ruben';
+        const spritesDir = path.join(process.cwd(), 'public', 'sprites', defaultChar);
         try {
             await fs.access(spritesDir);
         } catch {
@@ -12,7 +13,7 @@ export async function GET() {
         }
 
         const files = await fs.readdir(spritesDir);
-        const pngFiles = files.filter(f => f.endsWith('.png')).map(f => `/sprites/cholo/${f}`);
+        const pngFiles = files.filter(f => f.endsWith('.png')).map(f => `/sprites/${defaultChar}/${f}`);
 
         return NextResponse.json({
             exists: pngFiles.length > 0,

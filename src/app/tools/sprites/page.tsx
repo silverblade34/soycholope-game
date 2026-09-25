@@ -11,9 +11,11 @@ import { AnimationPlayer } from '@/components/sprites/AnimationPlayer';
 import { FrameStrip } from '@/components/sprites/FrameStrip';
 import { Film, Download, Save, Gamepad2, User, Loader2, CheckCircle2, AlertCircle, Plus, Check, X } from 'lucide-react';
 
+const DEFAULT_ENV_CHAR = process.env.NEXT_PUBLIC_DEFAULT_CHARACTER || 'ruben';
+
 export default function SpriteStudioPage() {
-    const [characterName, setCharacterName] = useState<string>('ruben');
-    const [availableCharacters, setAvailableCharacters] = useState<string[]>(['ruben', 'cholo', 'ladron']);
+    const [characterName, setCharacterName] = useState<string>(DEFAULT_ENV_CHAR);
+    const [availableCharacters, setAvailableCharacters] = useState<string[]>([DEFAULT_ENV_CHAR]);
     const [isCreatingChar, setIsCreatingChar] = useState<boolean>(false);
     const [newCharName, setNewCharName] = useState<string>('');
 
@@ -25,7 +27,7 @@ export default function SpriteStudioPage() {
                 name: item.name,
                 label: item.label,
                 icon: item.icon,
-                sheetUrl: item.name === 'correr' ? '/sprites/cholo/correr.png' : '',
+                sheetUrl: item.name === 'correr' ? `/sprites/${DEFAULT_ENV_CHAR}/correr/correr.png` : '',
                 frameCount: 5,
                 frameWidth: 0,
                 frameHeight: 0,
@@ -172,7 +174,7 @@ export default function SpriteStudioPage() {
                 }
 
                 const combined = Array.from(new Set([...serverChars, ...localChars])).filter(Boolean).sort();
-                const finalChars = combined.length > 0 ? combined : ['ruben'];
+                const finalChars = combined.length > 0 ? combined : [DEFAULT_ENV_CHAR];
                 setAvailableCharacters(finalChars);
 
                 if (typeof window !== 'undefined') {
@@ -182,9 +184,9 @@ export default function SpriteStudioPage() {
                 const savedChar = typeof window !== 'undefined' ? localStorage.getItem('sprite_studio_last_character') : null;
                 const initial = savedChar && finalChars.includes(savedChar)
                     ? savedChar
-                    : finalChars.includes('ruben')
-                    ? 'ruben'
-                    : finalChars[0];
+                    : finalChars.includes(DEFAULT_ENV_CHAR)
+                    ? DEFAULT_ENV_CHAR
+                    : finalChars[0] || DEFAULT_ENV_CHAR;
 
                 setCharacterName(initial);
                 loadCharacterData(initial);
