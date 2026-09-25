@@ -171,3 +171,52 @@ export async function createAnimatedGif(
         reader.readAsDataURL(blob);
     });
 }
+
+/**
+ * Construye una hoja de sprites compuesta (composite sprite sheet horizontal)
+ * uniendo los frames individuales recortados con sus ediciones, tamaños y recortes.
+ * Los frames se alinean en la base (suelo) para garantizar coherencia en la animación.
+ */
+export async function buildCompositeSpriteSheet(frameDataUrls: string[]): Promise<string> {
+    if (!frameDataUrls || frameDataUrls.length === 0) return '';
+
+    const loadedImgs: HTMLImageElement[] = await Promise.all(
+        frameDataUrls.map((url) => {
+            return new Promise<HTMLImageElement>((resolve) => {
+                const im = new Image();
+                im.crossOrigin = 'anonymous';
+                im.onload = () => resolve(im);
+                im.onerror = () => resolve(im);
+                im.src = url;
+            });
+        })
+    );
+
+    let totalW = 0;
+    let maxH = 0;
+    for (const im of loadedImgs) {
+        totalW += (im.naturalWidth || im.width || 100);
+        if ((im.naturalHeight || im.height) > maxH) maxH = im.naturalHeight || im.height;
+    }
+
+    if (totalW === 0 || maxH === 0) return '';
+
+    const canvas = document.createElement('canvas');
+    canvas.width = totalW;
+    canvas.height = maxH;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return '';
+
+    ctx.imageSmoothingEnabled = false;
+    let currentX = 0;
+    for (const im of loadedImgs) {
+        const w = im.naturalWidth || im.width || 100;
+        const h = im.naturalHeight || im.height || 100;
+        const y = maxH - h; // Alinear al suelo / base
+        ctx.drawImage(im, currentX, y, w, h);
+        currentX += w;
+    }
+
+    return canvas.toDataURL('image/png');
+}
+

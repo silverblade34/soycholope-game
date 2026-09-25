@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { ActionConfig, CharacterData, DEFAULT_ACTIONS, FrameOverride } from '@/components/sprites/types';
-import { calculateFrameSlices, extractFrameDataUrl, createAnimatedGif } from '@/components/sprites/slicerUtils';
+import { calculateFrameSlices, extractFrameDataUrl, createAnimatedGif, buildCompositeSpriteSheet } from '@/components/sprites/slicerUtils';
 import { ActionSelector } from '@/components/sprites/ActionSelector';
 import { SpriteSheetUploader } from '@/components/sprites/SpriteSheetUploader';
 import { SpriteSlicer } from '@/components/sprites/SpriteSlicer';
@@ -473,31 +473,31 @@ export default function SpriteStudioPage() {
 
                 const actionSlices = calculateFrameSlices(conf);
                 const framePaths: string[] = [];
+                const extractedDataUrls: string[] = [];
 
-                // Si algún frame fue retocado/limpiado con el borrador, actualizar la hoja compuesta
-                const hasAnyCleanedFrame = Object.values(conf.frameOverrides || {}).some((ov) => Boolean(ov.customImage));
-                if (hasAnyCleanedFrame) {
-                    const sheetCanvas = document.createElement('canvas');
-                    sheetCanvas.width = img.naturalWidth;
-                    sheetCanvas.height = img.naturalHeight;
-                    const sCtx = sheetCanvas.getContext('2d');
-                    if (sCtx) {
-                        sCtx.drawImage(img, 0, 0);
-                        for (let i = 0; i < actionSlices.length; i++) {
-                            const cDataUrl = conf.frameOverrides?.[i]?.customImage;
-                            if (cDataUrl) {
-                                const cImg = new Image();
-                                await new Promise<void>((res) => {
-                                    cImg.onload = () => res();
-                                    cImg.onerror = () => res();
-                                    cImg.src = cDataUrl;
-                                });
-                                const sl = actionSlices[i];
-                                sCtx.clearRect(sl.x, sl.y, sl.width, sl.height);
-                                sCtx.drawImage(cImg, sl.x, sl.y, sl.width, sl.height);
-                            }
+                // 2. Extraer y guardar frames individuales en [action]/frames/frame_X.png
+                actionSlices.forEach((slice, idx) => {
+                    const frameNum = idx + 1;
+                    const customImg = conf.frameOverrides?.[idx]?.customImage;
+                    const frameBase64 = extractFrameDataUrl(img, slice, customImg);
+                    if (frameBase64) {
+                        extractedDataUrls.push(frameBase64);
+                        const relPath = `${key}/frames/frame_${frameNum}.png`;
+                        filesToSave[relPath] = frameBase64;
+                        framePaths.push(`/sprites/${characterName}/${relPath}`);
+                    }
+                });
+
+                // Construir una nueva hoja compuesta limpia (composite sprite sheet)
+                // uniendo exactamente los frames editados (anchos personalizados, limpieza con borrador)
+                if (extractedDataUrls.length > 0) {
+                    try {
+                        const compositeSheetBase64 = await buildCompositeSpriteSheet(extractedDataUrls);
+                        if (compositeSheetBase64) {
+                            fullBase64 = compositeSheetBase64;
                         }
-                        fullBase64 = sheetCanvas.toDataURL('image/png');
+                    } catch {
+                        // En caso de fallo imprevisto se conserva la imagen original
                     }
                 }
 
@@ -506,18 +506,6 @@ export default function SpriteStudioPage() {
                 filesToSave[`${key}/${key}.png`] = fullBase64;
                 // Raíz del personaje: [action].png (para compatibilidad directa)
                 filesToSave[`${key}.png`] = fullBase64;
-
-                // 2. Extraer y guardar frames individuales en [action]/frames/frame_X.png
-                actionSlices.forEach((slice, idx) => {
-                    const frameNum = idx + 1;
-                    const customImg = conf.frameOverrides?.[idx]?.customImage;
-                    const frameBase64 = extractFrameDataUrl(img, slice, customImg);
-                    if (frameBase64) {
-                        const relPath = `${key}/frames/frame_${frameNum}.png`;
-                        filesToSave[relPath] = frameBase64;
-                        framePaths.push(`/sprites/${characterName}/${relPath}`);
-                    }
-                });
 
                 // 3. Generar GIF animado para la acción (como en reference_character: dash.gif, running.gif)
                 try {
@@ -832,10 +820,11 @@ export default function SpriteStudioPage() {
                     </button>
 
                     <Link
-                        href="/capitulos/1"
+                        href="/capitulos/1?mode=practice"
+                        title="Probar movimientos y acciones en el juego sin persecución de ladrón"
                         style={{
-                            background: 'linear-gradient(135deg, #f59e0b, #d97706)',
-                            color: '#000',
+                            background: 'linear-gradient(135deg, #10b981, #059669)',
+                            color: '#ffffff',
                             borderRadius: '8px',
                             padding: '8px 16px',
                             fontSize: '12px',
@@ -843,11 +832,12 @@ export default function SpriteStudioPage() {
                             textDecoration: 'none',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '6px'
+                            gap: '6px',
+                            boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)'
                         }}
                     >
                         <Gamepad2 size={15} />
-                        <span>Probar en Cap. 1</span>
+                        <span>Probar Movimiento en Juego</span>
                     </Link>
                 </div>
             </div>

@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { Gamepad2, Zap, ArrowRight } from 'lucide-react';
 
 export default function HomePage() {
     const [selectedMode, setSelectedMode] = useState<'turista' | 'causa' | 'conero'>('causa');
@@ -23,11 +24,18 @@ export default function HomePage() {
 
                 <div className="flex items-center gap-3 text-xs">
                     <Link
+                        href="/capitulos/1?mode=practice"
+                        className="bg-[#10241b] hover:bg-[#153426] border border-emerald-500/50 text-emerald-400 font-bold px-3 py-1.5 rounded flex items-center gap-1.5 shadow"
+                    >
+                        <Gamepad2 size={14} />
+                        <span>PROBAR MOVIMIENTO</span>
+                    </Link>
+                    <Link
                         href="/tools/sprites"
                         className="bg-[#1f212e] hover:bg-[#2a2d3e] border border-yellow-500/40 text-yellow-400 font-bold px-3 py-1.5 rounded flex items-center gap-1.5 shadow"
                     >
-                        <span>⚡</span>
-                        <span>GENERADOR DE SPRITES</span>
+                        <Zap size={14} />
+                        <span>GENERADOR SPRITES</span>
                     </Link>
                 </div>
             </header>
@@ -58,7 +66,20 @@ export default function HomePage() {
                                 className="w-full py-4 bg-[#e62329] hover:bg-red-700 text-white font-black text-sm rounded shadow-xl shadow-red-900/40 flex items-center justify-between px-6 uppercase tracking-wider transition-transform active:scale-98"
                             >
                                 <span>JUGAR CAPÍTULO 01</span>
-                                <span>➔</span>
+                                <ArrowRight size={16} />
+                            </Link>
+
+                            <Link
+                                href="/capitulos/1?mode=practice"
+                                className="w-full py-3.5 bg-gradient-to-r from-[#0d281e] to-[#121c24] hover:from-[#13392a] hover:to-[#1a2936] border-2 border-emerald-500/60 hover:border-emerald-400 text-emerald-300 font-black text-xs rounded flex items-center justify-between px-6 uppercase tracking-wider shadow-lg shadow-emerald-950/40 transition-all active:scale-98"
+                            >
+                                <span className="flex items-center gap-2">
+                                    <Gamepad2 size={16} className="text-emerald-400" />
+                                    <span>PROBAR MOVIMIENTO (SANDBOX)</span>
+                                </span>
+                                <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded font-mono">
+                                    LIBRE
+                                </span>
                             </Link>
 
                             <Link
