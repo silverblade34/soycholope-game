@@ -11,6 +11,7 @@ export interface FrameOverride {
     y?: number;
     width?: number;
     height?: number;
+    customImage?: string; // Data URL de imagen retocada o limpiada con borrador
 }
 
 export interface ActionConfig {

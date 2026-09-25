@@ -3,7 +3,8 @@
 import React, { useMemo, useState } from 'react';
 import { ActionConfig, FrameSlice, FrameOverride } from './types';
 import { extractFrameDataUrl, createAnimatedGif } from './slicerUtils';
-import { Film, Download, Sliders, RotateCcw, Sparkles } from 'lucide-react';
+import { FrameCleanerModal } from './FrameCleanerModal';
+import { Film, Download, Sliders, RotateCcw, Sparkles, Eraser } from 'lucide-react';
 
 interface FrameStripProps {
     action: ActionConfig;
@@ -23,6 +24,7 @@ export const FrameStrip: React.FC<FrameStripProps> = ({
     onUpdateFrameOverride
 }) => {
     const [isGeneratingGif, setIsGeneratingGif] = useState<boolean>(false);
+    const [isCleanerModalOpen, setIsCleanerModalOpen] = useState<boolean>(false);
 
     // Generar thumbnails sincrónicamente con useMemo cuando cambien slices o la imagen
     const frameThumbnails = useMemo(() => {
@@ -45,7 +47,7 @@ export const FrameStrip: React.FC<FrameStripProps> = ({
 
     const handleDownloadFrame = (idx: number, e: React.MouseEvent) => {
         e.stopPropagation();
-        const url = frameThumbnails[idx];
+        const url = action.frameOverrides?.[idx]?.customImage || frameThumbnails[idx] || (action.frames && action.frames[idx]);
         if (!url) return;
 
         const a = document.createElement('a');
@@ -58,7 +60,13 @@ export const FrameStrip: React.FC<FrameStripProps> = ({
         if (!imageElement || slices.length === 0) return;
         setIsGeneratingGif(true);
         try {
-            const gifDataUrl = await createAnimatedGif(imageElement, slices, action.fps, action.loop);
+            const customImgs: Record<number, string> = {};
+            if (action.frameOverrides) {
+                for (const [k, v] of Object.entries(action.frameOverrides)) {
+                    if (v.customImage) customImgs[parseInt(k)] = v.customImage;
+                }
+            }
+            const gifDataUrl = await createAnimatedGif(imageElement, slices, action.fps, action.loop, customImgs);
             if (gifDataUrl) {
                 const a = document.createElement('a');
                 a.href = gifDataUrl;
@@ -141,7 +149,8 @@ export const FrameStrip: React.FC<FrameStripProps> = ({
             >
                 {slices.map((slice, idx) => {
                     const isActive = idx === activeFrameIndex;
-                    const thumbUrl = frameThumbnails[idx] || (action.frames && action.frames[idx]) || '';
+                    const isCleaned = Boolean(action.frameOverrides?.[idx]?.customImage);
+                    const thumbUrl = action.frameOverrides?.[idx]?.customImage || frameThumbnails[idx] || (action.frames && action.frames[idx]) || '';
                     const hasOverride = Boolean(action.frameOverrides?.[idx]);
 
                     return (
@@ -154,7 +163,13 @@ export const FrameStrip: React.FC<FrameStripProps> = ({
                                 alignItems: 'center',
                                 gap: '6px',
                                 background: isActive ? 'rgba(245, 158, 11, 0.12)' : '#0f172a',
-                                border: isActive ? '2px solid #f59e0b' : hasOverride ? '1px dashed #3b82f6' : '1px solid #334155',
+                                border: isActive
+                                    ? '2px solid #f59e0b'
+                                    : isCleaned
+                                    ? '1.5px solid #10b981'
+                                    : hasOverride
+                                    ? '1px dashed #3b82f6'
+                                    : '1px solid #334155',
                                 borderRadius: '8px',
                                 padding: '8px',
                                 cursor: 'pointer',
@@ -163,25 +178,40 @@ export const FrameStrip: React.FC<FrameStripProps> = ({
                                 position: 'relative'
                             }}
                         >
-                            {hasOverride && (
-                                <span
-                                    title="Este frame tiene un corte manual personalizado"
-                                    style={{
-                                        position: 'absolute',
-                                        top: '4px',
-                                        left: '4px',
-                                        background: '#3b82f6',
-                                        color: '#fff',
-                                        fontSize: '8px',
-                                        fontWeight: 800,
-                                        padding: '1px 4px',
-                                        borderRadius: '3px',
-                                        zIndex: 2
-                                    }}
-                                >
-                                    EDIT
-                                </span>
-                            )}
+                            {/* Badges */}
+                            <div style={{ position: 'absolute', top: '4px', left: '4px', display: 'flex', gap: '3px', zIndex: 2 }}>
+                                {hasOverride && !isCleaned && (
+                                    <span
+                                        title="Este frame tiene un corte manual personalizado"
+                                        style={{
+                                            background: '#3b82f6',
+                                            color: '#fff',
+                                            fontSize: '8px',
+                                            fontWeight: 800,
+                                            padding: '1px 4px',
+                                            borderRadius: '3px'
+                                        }}
+                                    >
+                                        EDIT
+                                    </span>
+                                )}
+                                {isCleaned && (
+                                    <span
+                                        title="Este frame ha sido retocado/limpiado con el pincel borrador"
+                                        style={{
+                                            background: 'linear-gradient(135deg, #10b981, #059669)',
+                                            color: '#fff',
+                                            fontSize: '8px',
+                                            fontWeight: 800,
+                                            padding: '1px 5px',
+                                            borderRadius: '3px',
+                                            boxShadow: '0 0 6px rgba(16, 185, 129, 0.4)'
+                                        }}
+                                    >
+                                        LIMPIO
+                                    </span>
+                                )}
+                            </div>
 
                             <div
                                 style={{
@@ -261,39 +291,71 @@ export const FrameStrip: React.FC<FrameStripProps> = ({
                         gap: '10px'
                     }}
                 >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <Sliders size={13} color="#f59e0b" />
                             <span style={{ fontSize: '12px', fontWeight: 700, color: '#f8fafc' }}>
                                 Ajuste Individual: Frame #{activeFrameIndex + 1}
                             </span>
-                            {currentOverride && (
+                            {currentOverride?.customImage && (
+                                <span style={{ fontSize: '10px', background: 'rgba(16, 185, 129, 0.2)', color: '#34d399', padding: '1px 6px', borderRadius: '4px', fontWeight: 700 }}>
+                                    Retocado (Limpio)
+                                </span>
+                            )}
+                            {currentOverride && !currentOverride.customImage && (
                                 <span style={{ fontSize: '10px', background: 'rgba(59, 130, 246, 0.2)', color: '#60a5fa', padding: '1px 6px', borderRadius: '4px' }}>
                                     Personalizado
                                 </span>
                             )}
                         </div>
 
-                        {currentOverride && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <button
-                                onClick={() => onUpdateFrameOverride(activeFrameIndex, null)}
+                                onClick={() => setIsCleanerModalOpen(true)}
+                                title="Abrir pincel borrador para limpiar sangrado, colas del frame anterior o artefactos sin alterar otros frames"
                                 style={{
-                                    background: 'transparent',
-                                    border: '1px solid #334155',
-                                    color: '#94a3b8',
-                                    borderRadius: '4px',
-                                    padding: '2px 8px',
-                                    fontSize: '10px',
+                                    background: currentOverride?.customImage
+                                        ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(5, 150, 105, 0.15))'
+                                        : 'linear-gradient(135deg, rgba(59, 130, 246, 0.25), rgba(37, 99, 235, 0.15))',
+                                    border: currentOverride?.customImage ? '1px solid #10b981' : '1px solid #3b82f6',
+                                    color: currentOverride?.customImage ? '#6ee7b7' : '#93c5fd',
+                                    borderRadius: '6px',
+                                    padding: '4px 10px',
+                                    fontSize: '11px',
+                                    fontWeight: 700,
                                     cursor: 'pointer',
                                     display: 'flex',
                                     alignItems: 'center',
-                                    gap: '4px'
+                                    gap: '6px',
+                                    boxShadow: currentOverride?.customImage ? '0 0 10px rgba(16, 185, 129, 0.3)' : '0 0 10px rgba(59, 130, 246, 0.2)'
                                 }}
                             >
-                                <RotateCcw size={10} />
-                                <span>Restablecer a automático</span>
+                                <Eraser size={13} color={currentOverride?.customImage ? '#34d399' : '#60a5fa'} />
+                                <span>{currentOverride?.customImage ? 'Retocar Pincel (Limpio)' : 'Pincel Borrador (Limpiar Frame)'}</span>
                             </button>
-                        )}
+
+                            {currentOverride && (
+                                <button
+                                    onClick={() => onUpdateFrameOverride(activeFrameIndex, null)}
+                                    title="Restablecer este frame a los valores calculados de la tira"
+                                    style={{
+                                        background: 'transparent',
+                                        border: '1px solid #334155',
+                                        color: '#94a3b8',
+                                        borderRadius: '4px',
+                                        padding: '4px 8px',
+                                        fontSize: '10px',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '4px'
+                                    }}
+                                >
+                                    <RotateCcw size={10} />
+                                    <span>Restablecer</span>
+                                </button>
+                            )}
+                        </div>
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px' }}>
@@ -374,6 +436,25 @@ export const FrameStrip: React.FC<FrameStripProps> = ({
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* Modal de Limpieza Inteligente con Pincel Borrador */}
+            {currentSlice && (
+                <FrameCleanerModal
+                    isOpen={isCleanerModalOpen}
+                    onClose={() => setIsCleanerModalOpen(false)}
+                    frameIndex={activeFrameIndex}
+                    actionName={action.name}
+                    slice={currentSlice}
+                    imageElement={imageElement}
+                    initialCustomImage={action.frameOverrides?.[activeFrameIndex]?.customImage}
+                    onSave={(cleanedDataUrl) => {
+                        onUpdateFrameOverride(activeFrameIndex, { customImage: cleanedDataUrl });
+                    }}
+                    onResetToOriginal={() => {
+                        onUpdateFrameOverride(activeFrameIndex, { customImage: undefined });
+                    }}
+                />
             )}
         </div>
     );

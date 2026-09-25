@@ -39,6 +39,30 @@ export const AnimationPlayer: React.FC<AnimationPlayerProps> = ({
         lastFrameTimeRef.current = performance.now();
     }, [action.name, slices.length, setActiveFrameIndex]);
 
+    // Cache de imágenes limpiadas/personalizadas para los frames individuales
+    const customImagesRef = useRef<Record<number, HTMLImageElement>>({});
+
+    useEffect(() => {
+        const overrides = action.frameOverrides;
+        if (!overrides) {
+            customImagesRef.current = {};
+            return;
+        }
+
+        Object.entries(overrides).forEach(([key, ov]) => {
+            const idx = parseInt(key);
+            if (ov.customImage) {
+                const img = new Image();
+                img.onload = () => {
+                    customImagesRef.current[idx] = img;
+                };
+                img.src = ov.customImage;
+            } else {
+                delete customImagesRef.current[idx];
+            }
+        });
+    }, [action.frameOverrides]);
+
     // Loop de renderizado continuo en Canvas
     useEffect(() => {
         let isCancelled = false;
@@ -112,24 +136,30 @@ export const AnimationPlayer: React.FC<AnimationPlayerProps> = ({
             // Dibujar el frame recortado con pixel-art perfecto
             ctx.imageSmoothingEnabled = false;
 
-            if (imageElement && curSlice && imageElement.complete && imageElement.naturalWidth > 0) {
+            if (curSlice) {
                 // Sombra suave bajo el personaje
                 ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
                 ctx.beginPath();
                 ctx.ellipse(targetW / 2, targetH - Math.max(6, targetH * 0.03), (targetW * 0.35), Math.max(4, targetH * 0.02), 0, 0, Math.PI * 2);
                 ctx.fill();
 
-                ctx.drawImage(
-                    imageElement,
-                    curSlice.x,
-                    curSlice.y,
-                    curSlice.width,
-                    curSlice.height,
-                    0,
-                    0,
-                    targetW,
-                    targetH
-                );
+                // Si este frame tiene una imagen personalizada/limpiada con el borrador
+                const customImg = customImagesRef.current[activeFrameIndex];
+                if (customImg && customImg.complete && customImg.naturalWidth > 0) {
+                    ctx.drawImage(customImg, 0, 0, targetW, targetH);
+                } else if (imageElement && imageElement.complete && imageElement.naturalWidth > 0) {
+                    ctx.drawImage(
+                        imageElement,
+                        curSlice.x,
+                        curSlice.y,
+                        curSlice.width,
+                        curSlice.height,
+                        0,
+                        0,
+                        targetW,
+                        targetH
+                    );
+                }
             }
 
             animRef.current = requestAnimationFrame(loop);

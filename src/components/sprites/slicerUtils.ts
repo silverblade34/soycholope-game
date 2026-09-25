@@ -44,7 +44,9 @@ export function calculateFrameSlices(config: ActionConfig): FrameSlice[] {
 /**
  * Extrae un frame individual recortado a un DataURL base64 usando un canvas temporal
  */
-export function extractFrameDataUrl(img: HTMLImageElement, slice: FrameSlice): string {
+export function extractFrameDataUrl(img: HTMLImageElement, slice: FrameSlice, customImage?: string): string {
+    if (customImage) return customImage;
+
     const canvas = document.createElement('canvas');
     canvas.width = slice.width;
     canvas.height = slice.height;
@@ -68,13 +70,15 @@ export function extractFrameDataUrl(img: HTMLImageElement, slice: FrameSlice): s
 }
 
 /**
- * Genera un GIF animado transparente con gifenc centrado en cada frame
+ * Genera un GIF animado transparente con gifenc centrado en cada frame,
+ * soportando frames individuales con retoque/limpieza personalizado.
  */
 export async function createAnimatedGif(
     img: HTMLImageElement,
     slices: FrameSlice[],
     fps: number,
-    loop: boolean = true
+    loop: boolean = true,
+    customImages?: Record<number, string>
 ): Promise<string> {
     if (!slices.length || !img || !img.complete || img.naturalWidth === 0) return '';
 
@@ -91,6 +95,26 @@ export async function createAnimatedGif(
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
     if (!ctx) return '';
 
+    // Pre-cargar imágenes personalizadas si las hay
+    const loadedCustomImgs: Record<number, HTMLImageElement> = {};
+    if (customImages) {
+        await Promise.all(
+            Object.entries(customImages).map(([idxStr, dataUrl]) => {
+                const idx = parseInt(idxStr);
+                if (!dataUrl) return Promise.resolve();
+                return new Promise<void>((resolve) => {
+                    const cImg = new Image();
+                    cImg.onload = () => {
+                        loadedCustomImgs[idx] = cImg;
+                        resolve();
+                    };
+                    cImg.onerror = () => resolve();
+                    cImg.src = dataUrl;
+                });
+            })
+        );
+    }
+
     for (const slice of slices) {
         ctx.clearRect(0, 0, maxW, maxH);
         ctx.imageSmoothingEnabled = false;
@@ -99,17 +123,22 @@ export async function createAnimatedGif(
         const dx = Math.round((maxW - slice.width) / 2);
         const dy = maxH - slice.height;
 
-        ctx.drawImage(
-            img,
-            slice.x,
-            slice.y,
-            slice.width,
-            slice.height,
-            dx,
-            dy,
-            slice.width,
-            slice.height
-        );
+        const custom = loadedCustomImgs[slice.index];
+        if (custom) {
+            ctx.drawImage(custom, dx, dy, slice.width, slice.height);
+        } else {
+            ctx.drawImage(
+                img,
+                slice.x,
+                slice.y,
+                slice.width,
+                slice.height,
+                dx,
+                dy,
+                slice.width,
+                slice.height
+            );
+        }
 
         const imageData = ctx.getImageData(0, 0, maxW, maxH);
         const { data } = imageData;

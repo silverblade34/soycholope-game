@@ -469,6 +469,36 @@ export default function SpriteStudioPage() {
 
                 if (!fullBase64) continue;
 
+                const actionSlices = calculateFrameSlices(conf);
+                const framePaths: string[] = [];
+
+                // Si algún frame fue retocado/limpiado con el borrador, actualizar la hoja compuesta
+                const hasAnyCleanedFrame = Object.values(conf.frameOverrides || {}).some((ov) => Boolean(ov.customImage));
+                if (hasAnyCleanedFrame) {
+                    const sheetCanvas = document.createElement('canvas');
+                    sheetCanvas.width = img.naturalWidth;
+                    sheetCanvas.height = img.naturalHeight;
+                    const sCtx = sheetCanvas.getContext('2d');
+                    if (sCtx) {
+                        sCtx.drawImage(img, 0, 0);
+                        for (let i = 0; i < actionSlices.length; i++) {
+                            const cDataUrl = conf.frameOverrides?.[i]?.customImage;
+                            if (cDataUrl) {
+                                const cImg = new Image();
+                                await new Promise<void>((res) => {
+                                    cImg.onload = () => res();
+                                    cImg.onerror = () => res();
+                                    cImg.src = cDataUrl;
+                                });
+                                const sl = actionSlices[i];
+                                sCtx.clearRect(sl.x, sl.y, sl.width, sl.height);
+                                sCtx.drawImage(cImg, sl.x, sl.y, sl.width, sl.height);
+                            }
+                        }
+                        fullBase64 = sheetCanvas.toDataURL('image/png');
+                    }
+                }
+
                 // Guardar como en reference_character:
                 // Carpeta de acción: [action]/[action].png (ej: correr/correr.png)
                 filesToSave[`${key}/${key}.png`] = fullBase64;
@@ -476,12 +506,10 @@ export default function SpriteStudioPage() {
                 filesToSave[`${key}.png`] = fullBase64;
 
                 // 2. Extraer y guardar frames individuales en [action]/frames/frame_X.png
-                const actionSlices = calculateFrameSlices(conf);
-                const framePaths: string[] = [];
-
                 actionSlices.forEach((slice, idx) => {
                     const frameNum = idx + 1;
-                    const frameBase64 = extractFrameDataUrl(img, slice);
+                    const customImg = conf.frameOverrides?.[idx]?.customImage;
+                    const frameBase64 = extractFrameDataUrl(img, slice, customImg);
                     if (frameBase64) {
                         const relPath = `${key}/frames/frame_${frameNum}.png`;
                         filesToSave[relPath] = frameBase64;
@@ -491,7 +519,13 @@ export default function SpriteStudioPage() {
 
                 // 3. Generar GIF animado para la acción (como en reference_character: dash.gif, running.gif)
                 try {
-                    const gifBase64 = await createAnimatedGif(img, actionSlices, conf.fps, conf.loop);
+                    const customImgs: Record<number, string> = {};
+                    if (conf.frameOverrides) {
+                        for (const [k, v] of Object.entries(conf.frameOverrides)) {
+                            if (v.customImage) customImgs[parseInt(k)] = v.customImage;
+                        }
+                    }
+                    const gifBase64 = await createAnimatedGif(img, actionSlices, conf.fps, conf.loop, customImgs);
                     if (gifBase64) {
                         filesToSave[`${key}/${key}.gif`] = gifBase64;
                         filesToSave[`${key}.gif`] = gifBase64;

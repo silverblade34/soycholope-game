@@ -15,7 +15,7 @@ interface ActionMeta {
     loop?: boolean;
     totalWidth?: number;
     totalHeight?: number;
-    frameOverrides?: Record<number, { x?: number; y?: number; width?: number; height?: number }>;
+    frameOverrides?: Record<number, { x?: number; y?: number; width?: number; height?: number; customImage?: string }>;
     spriteSheet?: string;
     spriteSheetRoot?: string;
     gif?: string;
