@@ -116,35 +116,119 @@ export const DEFAULT_ITEMS_CATALOG: ItemDefinition[] = [
         }
     },
     {
-        id: 'cable',
-        name: 'Cable',
-        label: 'CABLE COLGANTE',
+        id: 'charco',
+        name: 'Charco',
+        label: 'CHARCO DE AGUA',
         category: 'obstaculo',
-        subCategory: 'obstaculo_alto',
-        tier: 'alto',
+        subCategory: 'obstaculo_bajo',
+        tier: 'piso',
         frequency: 'media',
-        imageUrl: '/items/cable.png',
-        description: 'Cable clandestino o descolgado de poste. Te engancha y pierdes 1s de control.',
+        imageUrl: '/items/charco.png',
+        description: 'Charco de agua estancada. Resbalón que frena el avance y salpica agua.',
         effects: {
             vidaDelta: 0,
-            stunDuracion: 1.0,
-            mechanicHint: 'Agacharse'
+            velocidadFactor: 0.75,
+            velocidadDuracion: 1.8,
+            cansancioDelta: 10,
+            mechanicHint: 'Saltar charco'
         }
     },
     {
-        id: 'cordel',
-        name: 'Cordel',
-        label: 'CORDEL DE ROPA',
+        id: 'caja_carton',
+        name: 'Caja de Cartón',
+        label: 'CAJA DE CARTÓN',
         category: 'obstaculo',
-        subCategory: 'obstaculo_alto',
-        tier: 'alto',
+        subCategory: 'obstaculo_bajo',
+        tier: 'piso',
         frequency: 'media',
-        imageUrl: '/items/cordel.png',
-        description: 'Tendedero cruzado entre callejones. Tropiezo cómico y -5 de vida.',
+        imageUrl: '/items/caja_carton.png',
+        description: 'Caja botada en la pista. Si chocas tropiezas y te raspas la rodilla.',
         effects: {
             vidaDelta: -5,
+            stunDuracion: 0.4,
+            mechanicHint: 'Saltar encima'
+        }
+    },
+    {
+        id: 'maceta_volcada',
+        name: 'Maceta Volcada',
+        label: 'MACETA VOLCADA',
+        category: 'obstaculo',
+        subCategory: 'obstaculo_bajo',
+        tier: 'piso',
+        frequency: 'media',
+        imageUrl: '/items/maceta_volcada.png',
+        description: 'Maceta rota con tierra y flores. Tropiezo que baja 8 de vida.',
+        effects: {
+            vidaDelta: -8,
+            stunDuracion: 0.5,
+            mechanicHint: 'Saltar'
+        }
+    },
+    {
+        id: 'perro_echado',
+        name: 'Perro Echado',
+        label: 'FIRULAIS DURMIENDO',
+        category: 'obstaculo',
+        subCategory: 'obstaculo_bajo',
+        tier: 'piso',
+        frequency: 'media',
+        imageUrl: '/items/perro_echado.png',
+        description: 'Perrito callejero durmiendo en la vereda. Si lo pisas te muerde el tobillo.',
+        effects: {
+            vidaDelta: -10,
+            stunDuracion: 0.6,
+            cansancioDelta: 15,
+            mechanicHint: 'Saltar largo'
+        }
+    },
+    {
+        id: 'borracho',
+        name: 'Borracho',
+        label: 'BORRACHO EN LA VEREDA',
+        category: 'obstaculo',
+        subCategory: 'obstaculo_bloqueo',
+        tier: 'piso',
+        frequency: 'media',
+        imageUrl: '/items/borracho.png',
+        description: 'Tío roncando con sus chelas tiradas en la vereda. Ocupa bastante espacio horizontal.',
+        effects: {
+            vidaDelta: -12,
+            stunDuracion: 0.8,
+            cansancioDelta: 20,
+            mechanicHint: 'Salto largo o doble salto'
+        }
+    },
+    {
+        id: 'poste_caido',
+        name: 'Poste Caído',
+        label: 'POSTE CAÍDO CON CABLES',
+        category: 'obstaculo',
+        subCategory: 'obstaculo_bloqueo',
+        tier: 'alto',
+        frequency: 'rara',
+        imageUrl: '/items/poste_caido.png',
+        description: 'Poste de luz inclinado con chispas. Obstáculo alto y peligroso: -20 HP.',
+        effects: {
+            vidaDelta: -20,
             stunDuracion: 1.0,
-            mechanicHint: 'Agacharse'
+            mechanicHint: '¡Doble salto obligatorio!'
+        }
+    },
+    {
+        id: 'carrito_ambulante',
+        name: 'Carrito Ambulante',
+        label: 'CARRITO AMBULANTE',
+        category: 'obstaculo',
+        subCategory: 'obstaculo_bloqueo',
+        tier: 'alto',
+        frequency: 'rara',
+        imageUrl: '/items/carrito_ambulante.png',
+        description: 'Carrito de golosinas con sombrilla roja. Muy alto: requiere doble salto en combo para superarlo.',
+        effects: {
+            vidaDelta: -18,
+            stunDuracion: 0.9,
+            mechanicHint: '¡Combo Doble Salto!'
         }
     },
 

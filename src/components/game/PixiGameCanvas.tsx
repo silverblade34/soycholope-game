@@ -28,6 +28,7 @@ export interface PixiGameCanvasRef {
     triggerDrink: () => void;
     triggerFatigue: () => void;
     triggerHunger: () => void;
+    setVirtualKey: (key: 'left' | 'right' | 'jump' | 'duck' | 'sprint', pressed: boolean) => void;
 }
 
 export interface SurvivalStats {
@@ -47,6 +48,7 @@ export interface PixiGameCanvasProps {
     gameMode: 'mission' | 'practice';
     gameSpeed: number; // 0.5, 0.75, 1.0
     dummyActive: boolean;
+    isPaused?: boolean;
     activeChar?: string;
     thiefChar?: string;
     onActionChange?: (actionName: string) => void;
@@ -94,6 +96,7 @@ export const PixiGameCanvas = forwardRef<PixiGameCanvasRef, PixiGameCanvasProps>
         gameMode,
         gameSpeed,
         dummyActive,
+        isPaused = false,
         activeChar = 'ruben',
         thiefChar = 'ladron',
         onActionChange,
@@ -172,6 +175,7 @@ export const PixiGameCanvas = forwardRef<PixiGameCanvasRef, PixiGameCanvasProps>
         gameMode,
         gameSpeed,
         dummyActive,
+        isPaused,
         worldScrollX: 0,
         totalDistance: 0,
         distanceToThief: 35,
@@ -207,6 +211,7 @@ export const PixiGameCanvas = forwardRef<PixiGameCanvasRef, PixiGameCanvasProps>
             jumpStrength: -9.8,
             gravity: 0.38,
             isGrounded: true,
+            hasDoubleJumped: false,
             facingRight: true,
             isMoving: false,
             isSprinting: false,
@@ -251,7 +256,8 @@ export const PixiGameCanvas = forwardRef<PixiGameCanvasRef, PixiGameCanvasProps>
         stateRef.current.gameMode = gameMode;
         stateRef.current.gameSpeed = gameSpeed;
         stateRef.current.dummyActive = dummyActive;
-    }, [gameMode, gameSpeed, dummyActive]);
+        stateRef.current.isPaused = isPaused;
+    }, [gameMode, gameSpeed, dummyActive, isPaused]);
 
     const callbacksRef = useRef({
         onActionChange,
@@ -467,8 +473,33 @@ export const PixiGameCanvas = forwardRef<PixiGameCanvasRef, PixiGameCanvasProps>
         if (st.player.isGrounded) {
             st.player.vy = st.player.jumpStrength;
             st.player.isGrounded = false;
+            st.player.hasDoubleJumped = false;
             st.stats.cansancio = Math.min(100, st.stats.cansancio + 6);
             playSfx('jump');
+        } else if (!st.player.hasDoubleJumped) {
+            // ¡Doble Salto aéreo para superar obstáculos altos como Carrito o Poste!
+            st.player.vy = st.player.jumpStrength * 0.94;
+            st.player.hasDoubleJumped = true;
+            st.stats.cansancio = Math.min(100, st.stats.cansancio + 8);
+            playSfx('jump');
+            st.floatingTexts.push({
+                text: '¡DOBLE SALTO! 👟💨',
+                x: st.player.x,
+                y: st.player.y - 70,
+                opacity: 1.1,
+                vy: -1.2,
+                color: '#38bdf8'
+            });
+            for (let i = 0; i < 6; i++) {
+                st.particles.push({
+                    x: st.player.x + (Math.random() - 0.5) * 22,
+                    y: st.player.y,
+                    vx: (Math.random() - 0.5) * 3,
+                    vy: 1.5 + Math.random() * 2,
+                    life: 0.5,
+                    color: 0x38bdf8
+                });
+            }
         }
     };
 
@@ -544,6 +575,27 @@ export const PixiGameCanvas = forwardRef<PixiGameCanvasRef, PixiGameCanvasProps>
         });
     };
 
+    const setVirtualKey = (key: 'left' | 'right' | 'jump' | 'duck' | 'sprint', pressed: boolean) => {
+        const st = stateRef.current;
+        if (st.player.isDead && pressed) {
+            revivePlayer();
+        }
+        if (key === 'right') st.keys.right = pressed;
+        if (key === 'left') st.keys.left = pressed;
+        if (key === 'sprint') st.keys.sprint = pressed;
+        if (key === 'duck') {
+            st.keys.duck = pressed;
+            if (pressed && st.player.isGrounded) st.player.isDucking = true;
+            else if (!pressed) st.player.isDucking = false;
+        }
+        if (key === 'jump') {
+            if (pressed && !st.keys.jump) {
+                jump();
+            }
+            st.keys.jump = pressed;
+        }
+    };
+
     const actionsRef = useRef({
         triggerAttack,
         triggerDamage,
@@ -557,7 +609,8 @@ export const PixiGameCanvas = forwardRef<PixiGameCanvasRef, PixiGameCanvasProps>
         triggerEat,
         triggerDrink,
         triggerFatigue,
-        triggerHunger
+        triggerHunger,
+        setVirtualKey
     });
     useEffect(() => {
         actionsRef.current = {
@@ -573,7 +626,8 @@ export const PixiGameCanvas = forwardRef<PixiGameCanvasRef, PixiGameCanvasProps>
             triggerEat,
             triggerDrink,
             triggerFatigue,
-            triggerHunger
+            triggerHunger,
+            setVirtualKey
         };
     });
 
@@ -590,7 +644,8 @@ export const PixiGameCanvas = forwardRef<PixiGameCanvasRef, PixiGameCanvasProps>
         triggerEat,
         triggerDrink,
         triggerFatigue,
-        triggerHunger
+        triggerHunger,
+        setVirtualKey
     }));
 
     // Teclado
@@ -613,7 +668,7 @@ export const PixiGameCanvas = forwardRef<PixiGameCanvasRef, PixiGameCanvasProps>
             }
 
             if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') {
-                if (!st.keys.jump && st.player.isGrounded) {
+                if (!st.keys.jump) {
                     actionsRef.current.jump();
                 }
                 st.keys.jump = true;
@@ -895,8 +950,13 @@ export const PixiGameCanvas = forwardRef<PixiGameCanvasRef, PixiGameCanvasProps>
                     case 'cono': return 46;
                     case 'caca': return 30;
                     case 'basura': return 50;
-                    case 'cable': return 38;
-                    case 'cordel': return 42;
+                    case 'charco': return 28;
+                    case 'caja_carton': return 36;
+                    case 'maceta_volcada': return 38;
+                    case 'perro_echado': return 34;
+                    case 'borracho': return 40;
+                    case 'poste_caido': return 75; // Alto
+                    case 'carrito_ambulante': return 78; // Muy alto (requiere combo doble salto)
                     case 'cancha_serrana': return 30;
                     case 'emoliente': return 42;
                     case 'chicha_morada': return 40;
@@ -977,6 +1037,58 @@ export const PixiGameCanvas = forwardRef<PixiGameCanvasRef, PixiGameCanvasProps>
                 }
             };
 
+            const drawSnoreBubbles = (g: Graphics, phase: number, ox: number, oy: number) => {
+                for (let i = 0; i < 3; i++) {
+                    const prog = ((phase * 1.4 + i * 2.2) % 6) / 6;
+                    const bx = ox + Math.sin(phase * 2 + i) * 5 - prog * 10;
+                    const by = oy - prog * 30;
+                    const radius = 2.2 + prog * 3;
+                    const alpha = Math.sin(prog * Math.PI) * 0.8;
+                    g.circle(bx, by, radius).stroke({ color: 0x38bdf8, width: 1.5, alpha });
+                    g.circle(bx - radius * 0.3, by - radius * 0.3, radius * 0.35).fill({ color: 0xffffff, alpha: alpha * 0.9 });
+                }
+            };
+
+            const drawElectricSparks = (g: Graphics, phase: number, cx: number, cy: number) => {
+                const flash = Math.sin(phase * 8.5);
+                if (flash > 0.55) {
+                    const spX = cx + (Math.sin(phase * 16) * 9);
+                    const spY = cy + (Math.cos(phase * 16) * 6);
+                    g.poly([
+                        spX, spY - 6,
+                        spX + 2, spY - 1,
+                        spX + 7, spY,
+                        spX + 2, spY + 1,
+                        spX, spY + 6,
+                        spX - 2, spY + 1,
+                        spX - 7, spY,
+                        spX - 2, spY - 1
+                    ]).fill({ color: 0x67e8f9, alpha: 0.95 });
+                    g.circle(spX, spY, 2).fill({ color: 0xffffff });
+                }
+            };
+
+            const drawWaterRipples = (g: Graphics, phase: number, cy: number) => {
+                const ripAlpha = 0.35 + 0.2 * Math.sin(phase * 2.5);
+                g.ellipse(0, cy, 26, 7).stroke({ color: 0x93c5fd, width: 1.5, alpha: ripAlpha });
+                g.ellipse(5, cy - 1, 15, 4).stroke({ color: 0xdbeafe, width: 1, alpha: ripAlpha * 0.75 });
+            };
+
+            const drawSleepingZ = (g: Graphics, phase: number, ox: number, oy: number) => {
+                for (let i = 0; i < 2; i++) {
+                    const prog = ((phase * 1.1 + i * 3) % 6) / 6;
+                    const zx = ox + prog * 9;
+                    const zy = oy - prog * 22;
+                    const alpha = Math.sin(prog * Math.PI) * 0.8;
+                    const sz = 3 + prog * 2;
+                    g.moveTo(zx - sz, zy - sz);
+                    g.lineTo(zx + sz, zy - sz);
+                    g.lineTo(zx - sz, zy + sz);
+                    g.lineTo(zx + sz, zy + sz);
+                    g.stroke({ color: 0x94a3b8, width: 1.5, alpha });
+                }
+            };
+
             // Destrucción limpia y segura de un item
             const destroyItem = (item: ActiveItem) => {
                 item.collected = true;
@@ -1005,7 +1117,7 @@ export const PixiGameCanvas = forwardRef<PixiGameCanvasRef, PixiGameCanvasProps>
                 spr.scale.set(s, s);
 
                 let baseY = GROUND_Y;
-                if (itemDef.tier === 'piso') {
+                if (itemDef.category === 'obstaculo' || itemDef.tier === 'piso') {
                     spr.anchor.set(0.5, 0.96);
                     baseY = GROUND_Y;
                 } else if (itemDef.tier === 'medio') {
@@ -1013,7 +1125,7 @@ export const PixiGameCanvas = forwardRef<PixiGameCanvasRef, PixiGameCanvasProps>
                     baseY = GROUND_Y - 55;
                 } else {
                     spr.anchor.set(0.5, 0.5);
-                    baseY = itemDef.id === 'cable' || itemDef.id === 'cordel' ? GROUND_Y - 80 : GROUND_Y - 95;
+                    baseY = GROUND_Y - 90;
                 }
 
                 itemCont.position.set(worldX, baseY);
@@ -1087,6 +1199,8 @@ export const PixiGameCanvas = forwardRef<PixiGameCanvasRef, PixiGameCanvasProps>
                 world.scale.set(gameScale, gameScale);
                 world.position.x = (app.renderer.width - V_WIDTH * gameScale) / 2;
                 world.position.y = (app.renderer.height - V_HEIGHT * gameScale) / 2;
+
+                if (st.isPaused) return;
 
                 // ------------------------------------------
                 // B. Sistema de Supervivencia: Hambre, Cansancio y Vida
@@ -1528,19 +1642,46 @@ export const PixiGameCanvas = forwardRef<PixiGameCanvasRef, PixiGameCanvasProps>
                             drawSteam(item.fxFront, item.bobPhase, yCenter - targetH * 0.45);
                         }
                     } else if (item.itemDef.category === 'obstaculo') {
+                        const targetH = getItemTargetHeight(item.itemDef.id);
                         if (item.itemDef.id === 'basura' || item.itemDef.id === 'caca') {
                             item.fxBack.clear();
                             const sW = item.itemDef.id === 'basura' ? 28 : 15;
                             item.fxBack.ellipse(0, 0, sW, 6).fill({ color: 0x000000, alpha: 0.38 });
 
                             item.fxFront.clear();
-                            // Hedor verde ondulante apestoso
                             drawStinkFumes(item.fxFront, item.bobPhase, targetH);
-                            // Moscas zumbando erráticamente alrededor
                             drawFlies(item.fxFront, item.bobPhase, targetH);
+                        } else if (item.itemDef.id === 'borracho') {
+                            item.fxBack.clear();
+                            item.fxBack.ellipse(0, 0, 36, 6).fill({ color: 0x000000, alpha: 0.35 });
+
+                            item.fxFront.clear();
+                            drawSnoreBubbles(item.fxFront, item.bobPhase, 16, -26);
+                            drawSleepingZ(item.fxFront, item.bobPhase, 20, -28);
+                        } else if (item.itemDef.id === 'perro_echado') {
+                            item.fxBack.clear();
+                            item.fxBack.ellipse(0, 0, 26, 5.5).fill({ color: 0x000000, alpha: 0.35 });
+
+                            item.fxFront.clear();
+                            drawSleepingZ(item.fxFront, item.bobPhase, 14, -20);
+                        } else if (item.itemDef.id === 'poste_caido') {
+                            item.fxBack.clear();
+                            item.fxBack.ellipse(0, 0, 32, 6).fill({ color: 0x000000, alpha: 0.4 });
+
+                            item.fxFront.clear();
+                            drawElectricSparks(item.fxFront, item.bobPhase, -14, -18);
+                        } else if (item.itemDef.id === 'carrito_ambulante') {
+                            item.fxBack.clear();
+                            item.fxBack.ellipse(0, 0, 34, 6.5).fill({ color: 0x000000, alpha: 0.45 });
+
+                            item.fxFront.clear();
+                            drawSteam(item.fxFront, item.bobPhase, -58);
+                        } else if (item.itemDef.id === 'charco') {
+                            item.fxBack.clear();
+                            item.fxFront.clear();
+                            drawWaterRipples(item.fxFront, item.bobPhase, -4);
                         } else if (item.itemDef.id === 'hueco') {
                             item.fxBack.clear();
-                            // Borde de profundidad oscura en el pavimento
                             item.fxBack.ellipse(0, -2, 34, 10).fill({ color: 0x090d16, alpha: 0.65 });
                             item.fxFront.clear();
                         } else if (item.itemDef.id === 'cono') {
@@ -1549,6 +1690,7 @@ export const PixiGameCanvas = forwardRef<PixiGameCanvasRef, PixiGameCanvasProps>
                             item.fxFront.clear();
                         } else {
                             item.fxBack.clear();
+                            item.fxBack.ellipse(0, 0, 22, 5.5).fill({ color: 0x000000, alpha: 0.35 });
                             item.fxFront.clear();
                         }
                     }
@@ -1640,9 +1782,23 @@ export const PixiGameCanvas = forwardRef<PixiGameCanvasRef, PixiGameCanvasProps>
                                 destroyItem(item);
                             }
                         } else if (item.itemDef.category === 'obstaculo' && !item.hitPlayer) {
-                            if (item.itemDef.tier === 'piso') {
-                                if (st.player.y < GROUND_Y - 24) {
-                                    item.hitPlayer = true;
+                            const isTall = item.itemDef.id === 'poste_caido' || item.itemDef.id === 'carrito_ambulante';
+                            const isMedium = item.itemDef.id === 'basura' || item.itemDef.id === 'borracho';
+                            const requiredClearance = isTall ? GROUND_Y - 55 : isMedium ? GROUND_Y - 36 : GROUND_Y - 24;
+
+                            if (st.player.y < requiredClearance) {
+                                // ¡Superado con salto o combo doble salto!
+                                item.hitPlayer = true;
+                                if (isTall) {
+                                    st.floatingTexts.push({
+                                        text: '¡DOBLE SALTO LIMPIO! 🌟🚀',
+                                        x: st.player.x,
+                                        y: st.player.y - 75,
+                                        opacity: 1.1,
+                                        vy: -1.2,
+                                        color: '#38bdf8'
+                                    });
+                                } else {
                                     st.floatingTexts.push({
                                         text: '¡SALTADO! 👟✨',
                                         x: st.player.x,
@@ -1651,94 +1807,86 @@ export const PixiGameCanvas = forwardRef<PixiGameCanvasRef, PixiGameCanvasProps>
                                         vy: -1.0,
                                         color: '#4ade80'
                                     });
-                                } else {
-                                    item.hitPlayer = true;
-                                    if (st.stats.hasPoncho) {
-                                        st.floatingTexts.push({
-                                            text: '¡EL PONCHO ABSORBIÓ EL IMPACTO! 🛡️',
-                                            x: st.player.x,
-                                            y: st.player.y - 75,
-                                            opacity: 1,
-                                            vy: -1.1,
-                                            color: '#facc15'
-                                        });
-                                    } else {
-                                        st.stats.vida = Math.max(0, st.stats.vida + (item.itemDef.effects.vidaDelta || 0));
-                                        if (item.itemDef.effects.stunDuracion) {
-                                            st.stats.stunTimeLeft = item.itemDef.effects.stunDuracion;
-                                        }
-                                        if (item.itemDef.effects.velocidadFactor) {
-                                            st.stats.speedBuff = item.itemDef.effects.velocidadFactor;
-                                            st.stats.speedBuffTimeLeft = item.itemDef.effects.velocidadDuracion || 2.5;
-                                        }
-                                        if (item.itemDef.effects.cansancioDelta) {
-                                            st.stats.cansancio = Math.min(100, st.stats.cansancio + item.itemDef.effects.cansancioDelta);
-                                        }
-
-                                        st.player.isDamaged = true;
-                                        st.player.damageTimer = 0;
-                                        playSfx('hit');
-
-                                        const txt = item.itemDef.id === 'hueco' ? '¡HUECAZO EN PISTA! -15 HP 💥'
-                                            : item.itemDef.id === 'cono' ? '¡TROMPICÓN CON CONO! -5 HP 🚧'
-                                            : item.itemDef.id === 'caca' ? '¡PISASTE CACA! -20% VEL 💩'
-                                            : '¡BASURA! -10 HP 🗑️';
-
-                                        st.floatingTexts.push({
-                                            text: txt,
-                                            x: st.player.x,
-                                            y: st.player.y - 75,
-                                            opacity: 1,
-                                            vy: -1.2,
-                                            color: '#ef4444'
-                                        });
-                                    }
-                                    destroyItem(item);
                                 }
-                            } else if (item.itemDef.tier === 'alto') {
-                                if (st.player.isDucking) {
-                                    item.hitPlayer = true;
+                            } else {
+                                // Choque con el obstáculo
+                                item.hitPlayer = true;
+                                if (st.stats.hasPoncho) {
                                     st.floatingTexts.push({
-                                        text: '¡ESQUIVADO POR ABAJO! 🕶️',
+                                        text: '¡EL PONCHO ABSORBIÓ EL IMPACTO! 🛡️',
                                         x: st.player.x,
-                                        y: st.player.y - 45,
-                                        opacity: 0.9,
-                                        vy: -1.0,
-                                        color: '#38bdf8'
+                                        y: st.player.y - 75,
+                                        opacity: 1,
+                                        vy: -1.1,
+                                        color: '#facc15'
                                     });
                                 } else {
-                                    item.hitPlayer = true;
-                                    if (st.stats.hasPoncho) {
-                                        st.floatingTexts.push({
-                                            text: '¡PONCHO PROTEGIÓ! 🛡️',
-                                            x: st.player.x,
-                                            y: st.player.y - 75,
-                                            opacity: 1,
-                                            vy: -1.1,
-                                            color: '#facc15'
-                                        });
-                                    } else {
-                                        st.stats.vida = Math.max(0, st.stats.vida + (item.itemDef.effects.vidaDelta || 0));
-                                        st.stats.stunTimeLeft = item.itemDef.effects.stunDuracion || 0.8;
-                                        st.player.isDamaged = true;
-                                        st.player.damageTimer = 0;
-                                        playSfx('hit');
-
-                                        const txt = item.itemDef.id === 'cable'
-                                            ? '¡CABLE COLGANTE! ¡ENREDADO 1s! ⚡'
-                                            : '¡TENDEDERO EN LA CARA! -5 HP 🩲';
-
-                                        st.floatingTexts.push({
-                                            text: txt,
-                                            x: st.player.x,
-                                            y: st.player.y - 75,
-                                            opacity: 1,
-                                            vy: -1.2,
-                                            color: '#f43f5e'
-                                        });
+                                    st.stats.vida = Math.max(0, st.stats.vida + (item.itemDef.effects.vidaDelta || 0));
+                                    if (item.itemDef.effects.stunDuracion) {
+                                        st.stats.stunTimeLeft = item.itemDef.effects.stunDuracion;
                                     }
-                                    destroyItem(item);
+                                    if (item.itemDef.effects.velocidadFactor) {
+                                        st.stats.speedBuff = item.itemDef.effects.velocidadFactor;
+                                        st.stats.speedBuffTimeLeft = item.itemDef.effects.velocidadDuracion || 2.0;
+                                    }
+                                    if (item.itemDef.effects.cansancioDelta) {
+                                        st.stats.cansancio = Math.min(100, st.stats.cansancio + item.itemDef.effects.cansancioDelta);
+                                    }
+
+                                    // Trompicón / Knockback leve para no quedarse pegado
+                                    st.player.vx = Math.max(0.4, st.player.vx * 0.35);
+                                    st.thief.recoilX = 14;
+                                    st.player.isDamaged = true;
+                                    st.player.damageTimer = 0;
+                                    playSfx('hit');
+
+                                    let txt = '¡TROPIEZO! -5 HP 💥';
+                                    let col = '#ef4444';
+                                    if (item.itemDef.id === 'charco') {
+                                        txt = '¡SPLASH! ¡RESBALÓN EN EL CHARCO! 💦';
+                                        col = '#38bdf8';
+                                    } else if (item.itemDef.id === 'perro_echado') {
+                                        txt = '¡PISASTE AL FIRULAIS! ¡GUAU! -10 HP 🐕';
+                                        col = '#f87171';
+                                    } else if (item.itemDef.id === 'borracho') {
+                                        txt = '¡TROPEZASTE CON EL TÍO! -12 HP 🍺';
+                                        col = '#fb923c';
+                                    } else if (item.itemDef.id === 'poste_caido') {
+                                        txt = '¡CHISPAZO DEL POSTE! -20 HP ⚡';
+                                        col = '#f87171';
+                                    } else if (item.itemDef.id === 'carrito_ambulante') {
+                                        txt = '¡CHOCAZO CON EL CARRITO! -18 HP 🛒';
+                                        col = '#f43f5e';
+                                    } else if (item.itemDef.id === 'maceta_volcada') {
+                                        txt = '¡TROMPICÓN CON LA MACETA! -8 HP 🪴';
+                                        col = '#f59e0b';
+                                    } else if (item.itemDef.id === 'caja_carton') {
+                                        txt = '¡TROPIEZO CON LA CAJA! -5 HP 📦';
+                                        col = '#fbbf24';
+                                    } else if (item.itemDef.id === 'hueco') {
+                                        txt = '¡HUECAZO EN PISTA! -15 HP 💥';
+                                        col = '#ef4444';
+                                    } else if (item.itemDef.id === 'cono') {
+                                        txt = '¡TROMPICÓN CON CONO! -5 HP 🚧';
+                                        col = '#fb923c';
+                                    } else if (item.itemDef.id === 'caca') {
+                                        txt = '¡PISASTE CACA! -20% VEL 💩';
+                                        col = '#a3e635';
+                                    } else if (item.itemDef.id === 'basura') {
+                                        txt = '¡BASURA! -10 HP 🗑️';
+                                        col = '#ef4444';
+                                    }
+
+                                    st.floatingTexts.push({
+                                        text: txt,
+                                        x: st.player.x,
+                                        y: st.player.y - 75,
+                                        opacity: 1,
+                                        vy: -1.2,
+                                        color: col
+                                    });
                                 }
+                                destroyItem(item);
                             }
                         }
                     }

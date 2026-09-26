@@ -93,52 +93,6 @@
     "updatedAt": "2026-09-26T03:33:17.787Z"
   },
   {
-    "id": "cable",
-    "name": "Cable",
-    "label": "CABLE COLGANTE",
-    "category": "obstaculo",
-    "subCategory": "obstaculo_alto",
-    "tier": "alto",
-    "frequency": "media",
-    "description": "Cable clandestino o descolgado de poste. Te engancha y pierdes 1s de control.",
-    "effects": {
-      "vidaDelta": 0,
-      "stunDuracion": 1,
-      "mechanicHint": "Agacharse"
-    },
-    "imageUrl": "/items/cable.png",
-    "cropBox": {
-      "x": 57,
-      "y": 549,
-      "width": 374,
-      "height": 180
-    },
-    "updatedAt": "2026-09-26T03:33:32.147Z"
-  },
-  {
-    "id": "cordel",
-    "name": "Cordel",
-    "label": "CORDEL DE ROPA",
-    "category": "obstaculo",
-    "subCategory": "obstaculo_alto",
-    "tier": "alto",
-    "frequency": "media",
-    "description": "Tendedero cruzado entre callejones. Tropiezo cómico y -5 de vida.",
-    "effects": {
-      "vidaDelta": -5,
-      "stunDuracion": 1,
-      "mechanicHint": "Agacharse"
-    },
-    "imageUrl": "/items/cordel.png",
-    "cropBox": {
-      "x": 442,
-      "y": 555,
-      "width": 345,
-      "height": 174
-    },
-    "updatedAt": "2026-09-26T03:33:40.710Z"
-  },
-  {
     "id": "emoliente",
     "name": "Emoliente",
     "label": "EMOLIENTE CALIENTE",
@@ -312,5 +266,121 @@
       "mechanicHint": "Salto alto de riesgo"
     },
     "imageUrl": "/items/poncho.png"
+  },
+  {
+    "id": "charco",
+    "name": "Charco",
+    "label": "CHARCO DE AGUA",
+    "category": "obstaculo",
+    "subCategory": "obstaculo_bajo",
+    "tier": "piso",
+    "frequency": "media",
+    "description": "Charco de agua estancada. Resbalón que frena el avance y salpica agua.",
+    "effects": {
+      "vidaDelta": 0,
+      "velocidadFactor": 0.75,
+      "velocidadDuracion": 1.8,
+      "cansancioDelta": 10,
+      "mechanicHint": "Saltar charco"
+    },
+    "imageUrl": "/items/charco.png"
+  },
+  {
+    "id": "caja_carton",
+    "name": "Caja de Cartón",
+    "label": "CAJA DE CARTÓN",
+    "category": "obstaculo",
+    "subCategory": "obstaculo_bajo",
+    "tier": "piso",
+    "frequency": "media",
+    "description": "Caja botada en la pista. Si chocas tropiezas y te raspas la rodilla.",
+    "effects": {
+      "vidaDelta": -5,
+      "stunDuracion": 0.4,
+      "mechanicHint": "Saltar encima"
+    },
+    "imageUrl": "/items/caja_carton.png"
+  },
+  {
+    "id": "maceta_volcada",
+    "name": "Maceta Volcada",
+    "label": "MACETA VOLCADA",
+    "category": "obstaculo",
+    "subCategory": "obstaculo_bajo",
+    "tier": "piso",
+    "frequency": "media",
+    "description": "Maceta rota con tierra y flores. Tropiezo que baja 8 de vida.",
+    "effects": {
+      "vidaDelta": -8,
+      "stunDuracion": 0.5,
+      "mechanicHint": "Saltar"
+    },
+    "imageUrl": "/items/maceta_volcada.png"
+  },
+  {
+    "id": "perro_echado",
+    "name": "Perro Echado",
+    "label": "FIRULAIS DURMIENDO",
+    "category": "obstaculo",
+    "subCategory": "obstaculo_bajo",
+    "tier": "piso",
+    "frequency": "media",
+    "description": "Perrito callejero durmiendo en la vereda. Si lo pisas te muerde el tobillo.",
+    "effects": {
+      "vidaDelta": -10,
+      "stunDuracion": 0.6,
+      "cansancioDelta": 15,
+      "mechanicHint": "Saltar largo"
+    },
+    "imageUrl": "/items/perro_echado.png"
+  },
+  {
+    "id": "borracho",
+    "name": "Borracho",
+    "label": "BORRACHO EN LA VEREDA",
+    "category": "obstaculo",
+    "subCategory": "obstaculo_bloqueo",
+    "tier": "piso",
+    "frequency": "media",
+    "description": "Tío roncando con sus chelas tiradas en la vereda. Ocupa bastante espacio horizontal.",
+    "effects": {
+      "vidaDelta": -12,
+      "stunDuracion": 0.8,
+      "cansancioDelta": 20,
+      "mechanicHint": "Salto largo o doble salto"
+    },
+    "imageUrl": "/items/borracho.png"
+  },
+  {
+    "id": "poste_caido",
+    "name": "Poste Caído",
+    "label": "POSTE CAÍDO CON CABLES",
+    "category": "obstaculo",
+    "subCategory": "obstaculo_bloqueo",
+    "tier": "alto",
+    "frequency": "rara",
+    "description": "Poste de luz inclinado con chispas. Obstáculo alto y peligroso: -20 HP.",
+    "effects": {
+      "vidaDelta": -20,
+      "stunDuracion": 1,
+      "mechanicHint": "¡Doble salto obligatorio!"
+    },
+    "imageUrl": "/items/poste_caido.png"
+  },
+  {
+    "id": "carrito_ambulante",
+    "name": "Carrito Ambulante",
+    "label": "CARRITO AMBULANTE",
+    "category": "obstaculo",
+    "subCategory": "obstaculo_bloqueo",
+    "tier": "alto",
+    "frequency": "rara",
+    "description": "Carrito de golosinas con sombrilla roja. Muy alto: requiere doble salto en combo para superarlo.",
+    "effects": {
+      "vidaDelta": -18,
+      "stunDuracion": 0.9,
+      "mechanicHint": "¡Combo Doble Salto!"
+    },
+    "imageUrl": "/items/carrito_ambulante.png"
   }
 ]

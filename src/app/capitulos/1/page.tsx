@@ -24,7 +24,10 @@ import {
     SlidersHorizontal,
     Heart,
     Utensils,
-    Shield
+    Shield,
+    Pause,
+    Play,
+    ArrowRight
 } from 'lucide-react';
 import type { PixiGameCanvasRef, SurvivalStats } from '@/components/game/PixiGameCanvas';
 
@@ -165,6 +168,7 @@ export default function CapituloUnoPage() {
     const [isMusicPlaying, setIsMusicPlaying] = useState<boolean>(false);
     const [isPlayerDead, setIsPlayerDead] = useState<boolean>(false);
     const [showActionBar, setShowActionBar] = useState<boolean>(true);
+    const [isPaused, setIsPaused] = useState<boolean>(false);
 
     // Estado de Supervivencia Limeña (Vida, Cansancio, Hambre)
     const [survivalStats, setSurvivalStats] = useState<SurvivalStats>({
@@ -307,6 +311,11 @@ export default function CapituloUnoPage() {
             if (e.code === 'KeyC') {
                 setShowActionBar((prev) => !prev);
             }
+
+            // Atajo de Pausa (P o Escape)
+            if (e.code === 'KeyP' || e.code === 'Escape') {
+                setIsPaused((prev) => !prev);
+            }
         };
 
         window.addEventListener('keydown', onKeyDown);
@@ -330,6 +339,7 @@ export default function CapituloUnoPage() {
                 gameMode={gameMode}
                 gameSpeed={gameSpeed}
                 dummyActive={dummyActive}
+                isPaused={isPaused}
                 activeChar={process.env.NEXT_PUBLIC_DEFAULT_CHARACTER || 'ruben'}
                 thiefChar="ladron"
                 onActionChange={setActiveActionName}
@@ -347,430 +357,466 @@ export default function CapituloUnoPage() {
                 onStatsChange={setSurvivalStats}
             />
 
-            {/* Barra Superior / HUD Principal */}
-            <div className="absolute top-4 left-4 right-4 flex justify-between items-start pointer-events-none z-20">
-                <div className="flex flex-col gap-2">
-                    {/* Selector de Modo: Misión vs Práctica */}
-                    <div className="flex items-center bg-[#111]/90 border border-gray-700/80 p-1 rounded-xl shadow-xl backdrop-blur-md pointer-events-auto">
-                        <button
-                            onClick={() => switchMode('mission')}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-black uppercase transition-all flex items-center gap-1.5 cursor-pointer ${
-                                gameMode === 'mission'
-                                    ? 'bg-[#e62329] text-white shadow-md shadow-red-900/40'
-                                    : 'text-gray-400 hover:text-white hover:bg-white/5'
-                            }`}
-                        >
-                            <Flame size={13} />
-                            <span>Misión Choro</span>
-                        </button>
-                        <button
-                            onClick={() => switchMode('practice')}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-black uppercase transition-all flex items-center gap-1.5 cursor-pointer ${
-                                gameMode === 'practice'
-                                    ? 'bg-emerald-600 text-white shadow-md shadow-emerald-900/40'
-                                    : 'text-gray-400 hover:text-white hover:bg-white/5'
-                            }`}
-                        >
-                            <Gamepad2 size={13} />
-                            <span>Probar Movimiento (Sandbox)</span>
-                        </button>
-                    </div>
-
-                    {/* BARRAS DE SUPERVIVENCIA LIMEÑA: VIDA, CANSANCIO, HAMBRE */}
-                    <div className="flex flex-col gap-1.5 bg-[#0d0e15]/92 border border-gray-700/80 p-2.5 rounded-xl shadow-2xl backdrop-blur-md min-w-[250px] pointer-events-auto">
-                        {/* Barra de Vida */}
-                        <div className="flex flex-col gap-0.5">
-                            <div className="flex justify-between items-center text-[10px] font-black">
-                                <span className="flex items-center gap-1 text-red-400">
-                                    <Heart size={12} className="fill-red-500 text-red-500 animate-pulse" />
-                                    <span>VIDA</span>
-                                </span>
-                                <span className="text-white font-mono">{Math.round(survivalStats.vida)} / 100</span>
-                            </div>
-                            <div className="w-full bg-gray-900 border border-red-950 h-2.5 rounded-full overflow-hidden p-0.5">
-                                <div
-                                    className="h-full bg-gradient-to-r from-red-600 via-rose-500 to-red-400 rounded-full transition-all duration-150 shadow-[0_0_8px_rgba(239,68,68,0.5)]"
-                                    style={{ width: `${Math.max(0, Math.min(100, survivalStats.vida))}%` }}
-                                />
-                            </div>
+            {/* BARRA SUPERIOR / HUD PRINCIPAL (Fiel al Mockup) */}
+            <div className="absolute top-3 sm:top-4 left-3 sm:left-4 right-3 sm:right-4 flex justify-between items-start pointer-events-none z-20">
+                {/* LADO IZQUIERDO: CARD DEL PERSONAJE (Rubén) Y SUS BARRAS */}
+                <div className="flex flex-col gap-1.5 pointer-events-auto">
+                    <div className="flex items-center gap-3 bg-[#0a0c13]/92 border-2 border-[#1a2030] p-2 sm:p-2.5 px-3 rounded-2xl shadow-2xl backdrop-blur-md">
+                        {/* Avatar de Rubén con marco cyan */}
+                        <div className="w-13 h-13 sm:w-14 sm:h-14 bg-[#111420] border-2 border-cyan-500/50 rounded-xl overflow-hidden flex items-center justify-center shadow-[inset_0_0_10px_rgba(6,182,212,0.3)] flex-shrink-0">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                                src="/sprites/ruben/avatar.png"
+                                alt="Rubén"
+                                className="w-12 h-12 sm:w-13 sm:h-13 object-contain pixelated"
+                            />
                         </div>
 
-                        {/* Barra de Cansancio / Fatiga */}
-                        <div className="flex flex-col gap-0.5">
-                            <div className="flex justify-between items-center text-[10px] font-black">
-                                <span className="flex items-center gap-1 text-amber-400">
-                                    <Zap size={12} className="fill-amber-400 text-amber-400" />
-                                    <span>CANSANCIO</span>
-                                    {survivalStats.isFatigued && (
-                                        <span className="bg-red-600 text-white text-[8px] px-1 rounded animate-bounce">
-                                            ¡FATIGADO!
-                                        </span>
-                                    )}
-                                </span>
-                                <span className="text-white font-mono">{Math.round(survivalStats.cansancio)}%</span>
-                            </div>
-                            <div className="w-full bg-gray-900 border border-amber-950 h-2.5 rounded-full overflow-hidden p-0.5">
-                                <div
-                                    className={`h-full rounded-full transition-all duration-150 ${
-                                        survivalStats.isFatigued
-                                            ? 'bg-gradient-to-r from-red-500 to-amber-500 animate-pulse'
-                                            : 'bg-gradient-to-r from-amber-600 via-yellow-500 to-amber-400'
-                                    }`}
-                                    style={{ width: `${Math.max(0, Math.min(100, survivalStats.cansancio))}%` }}
-                                />
-                            </div>
-                        </div>
-
-                        {/* Barra de Hambre */}
-                        <div className="flex flex-col gap-0.5">
-                            <div className="flex justify-between items-center text-[10px] font-black">
-                                <span className="flex items-center gap-1 text-emerald-400">
-                                    <Utensils size={12} className="text-emerald-400" />
-                                    <span>HAMBRE</span>
-                                    {survivalStats.isStarving && (
-                                        <span className="bg-red-600 text-white text-[8px] px-1 rounded animate-pulse">
-                                            ¡INANICIÓN!
-                                        </span>
-                                    )}
-                                </span>
-                                <span className="text-white font-mono">{Math.round(survivalStats.hambre)}%</span>
-                            </div>
-                            <div className="w-full bg-gray-900 border border-emerald-950 h-2.5 rounded-full overflow-hidden p-0.5">
-                                <div
-                                    className={`h-full rounded-full transition-all duration-150 ${
-                                        survivalStats.hambre <= 20
-                                            ? 'bg-gradient-to-r from-red-600 to-orange-500 animate-pulse'
-                                            : 'bg-gradient-to-r from-emerald-600 via-green-500 to-teal-400'
-                                    }`}
-                                    style={{ width: `${Math.max(0, Math.min(100, survivalStats.hambre))}%` }}
-                                />
-                            </div>
-                        </div>
-
-                        {/* Badges de Efectos Activos (Poncho, Maca Turbo, Resbalón) */}
-                        {(survivalStats.hasPoncho || survivalStats.speedBuffTimeLeft > 0) && (
-                            <div className="flex flex-wrap gap-1 pt-1 border-t border-gray-800">
-                                {survivalStats.hasPoncho && (
-                                    <span className="bg-sky-950 border border-sky-400 text-sky-200 text-[9px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1 shadow">
-                                        <Shield size={10} className="text-sky-400" />
-                                        <span>PONCHO ESCUDO ({Math.ceil(survivalStats.ponchoTimeLeft)}s)</span>
+                        {/* Tres Barras de Supervivencia: Vida, Cansancio, Hambre */}
+                        <div className="flex flex-col gap-1 sm:gap-1.5 min-w-[190px] sm:min-w-[240px]">
+                            {/* 1. VIDA */}
+                            <div className="flex flex-col gap-0.5">
+                                <div className="flex justify-between items-center text-[10px] sm:text-[11px] font-black tracking-wider">
+                                    <span className="flex items-center gap-1.5 text-rose-500">
+                                        <Heart size={12} className="fill-rose-500 text-rose-500 animate-pulse" />
+                                        <span>VIDA</span>
                                     </span>
-                                )}
-                                {survivalStats.speedBuffTimeLeft > 0 && (
-                                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1 shadow ${
-                                        survivalStats.speedBuff > 1
-                                            ? 'bg-yellow-950 border border-yellow-400 text-yellow-200'
-                                            : 'bg-orange-950 border border-orange-400 text-orange-200'
-                                    }`}>
-                                        <span>
-                                            {survivalStats.speedBuff > 1
-                                                ? `⚡ TURBO MACA (${Math.ceil(survivalStats.speedBuffTimeLeft)}s)`
-                                                : `💩 RESBALÓN (${Math.ceil(survivalStats.speedBuffTimeLeft)}s)`}
-                                        </span>
+                                    <span className="text-white font-mono font-bold text-[10px] sm:text-[11px]">
+                                        {Math.round(survivalStats.vida)} / 100
                                     </span>
-                                )}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Badge en modo práctica */}
-                    {gameMode === 'practice' && (
-                        <div className="flex items-center gap-2 pointer-events-auto">
-                            <span className="bg-emerald-950/80 border border-emerald-500/50 text-emerald-300 text-[10px] font-black px-2.5 py-1 rounded-md flex items-center gap-1.5">
-                                <Target size={12} className="text-emerald-400" />
-                                <span>MODO LIBRE: SIN PERSECUCIÓN</span>
-                            </span>
-                            <span className="bg-black/60 border border-gray-700 text-gray-300 text-[10px] px-2 py-1 rounded">
-                                Hits: <strong className="text-yellow-400">{hitCount}</strong>
-                            </span>
-                        </div>
-                    )}
-                </div>
-
-                {/* Lateral Derecho: Selector de Velocidad, Música o Distancia */}
-                <div className="flex flex-col items-end gap-2 pointer-events-auto">
-                    <div className="flex items-center gap-2">
-                        {/* Selector de Velocidad */}
-                        <div className="flex items-center bg-[#181926]/90 border border-gray-700/80 rounded-lg p-0.5 shadow-lg">
-                            <Gauge size={13} className="text-amber-400 ml-2 mr-1" />
-                            <span className="text-[10px] text-gray-400 font-bold mr-1.5 uppercase hidden sm:inline">Velocidad:</span>
-                            {([0.5, 0.75, 1.0] as const).map((spd) => (
-                                <button
-                                    key={spd}
-                                    onClick={() => setGameSpeed(spd)}
-                                    className={`px-2 py-1 rounded text-[11px] font-bold transition-all cursor-pointer ${
-                                        gameSpeed === spd
-                                            ? 'bg-amber-500 text-black shadow font-black'
-                                            : 'text-gray-400 hover:text-white'
-                                    }`}
-                                    title={`Ajustar velocidad del juego a ${spd}x`}
-                                >
-                                    {spd === 0.75 ? '0.75x (Normal)' : `${spd}x`}
-                                </button>
-                            ))}
-                        </div>
-
-                        {/* Botón Música Retro */}
-                        <button
-                            onClick={toggleMusic}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-lg ${
-                                isMusicPlaying
-                                    ? 'bg-amber-600/90 text-amber-100 border border-amber-400'
-                                    : 'bg-[#181926]/90 text-gray-400 hover:text-white border border-gray-700'
-                            }`}
-                            title="Activar/Desactivar Música Retro Arcade (B)"
-                        >
-                            {isMusicPlaying ? <Volume2 size={13} className="animate-pulse" /> : <VolumeX size={13} />}
-                            <span>{isMusicPlaying ? 'Música: ON' : 'Música: OFF'}</span>
-                        </button>
-                    </div>
-
-                    {gameMode === 'mission' ? (
-                        <>
-                            <div
-                                className={`px-4 py-2 rounded border-2 shadow-xl text-right transition-colors ${
-                                    distanceToThief > 115
-                                        ? 'bg-red-950/90 border-red-500 animate-pulse'
-                                        : distanceToThief <= 10
-                                        ? 'bg-yellow-950/90 border-yellow-400'
-                                        : 'bg-black/85 border-white'
-                                }`}
-                            >
-                                <div className="text-[9px] text-gray-400 uppercase tracking-widest">Distancia al Choro</div>
-                                <div className="text-xl font-black text-yellow-400">
-                                    {distanceToThief} m
-                                    <span className="text-[10px] text-gray-300 ml-1">/ 150m máx</span>
+                                </div>
+                                <div className="w-full bg-[#201015] border border-rose-950/80 h-2.5 rounded-full overflow-hidden p-[1px]">
+                                    <div
+                                        className="h-full bg-gradient-to-r from-rose-600 via-rose-500 to-rose-400 rounded-full transition-all duration-150 shadow-[0_0_8px_rgba(244,63,94,0.6)]"
+                                        style={{ width: `${Math.max(0, Math.min(100, survivalStats.vida))}%` }}
+                                    />
                                 </div>
                             </div>
 
-                            <div className="text-[10px] bg-green-900 border border-white text-white px-2.5 py-1 rounded font-bold shadow flex items-center gap-2">
-                                <span>📍 AV. ABANCAY ➔ VÍA EXPRESA</span>
-                                <span className="text-yellow-300">({totalDistance}m)</span>
+                            {/* 2. CANSANCIO */}
+                            <div className="flex flex-col gap-0.5">
+                                <div className="flex justify-between items-center text-[10px] sm:text-[11px] font-black tracking-wider">
+                                    <span className="flex items-center gap-1.5 text-amber-400">
+                                        <Zap size={12} className="fill-amber-400 text-amber-400" />
+                                        <span>CANSANCIO</span>
+                                        {survivalStats.isFatigued && (
+                                            <span className="bg-red-600 text-white text-[8px] px-1 rounded animate-bounce">
+                                                ¡FATIGA!
+                                            </span>
+                                        )}
+                                    </span>
+                                    <span className="text-white font-mono font-bold text-[10px] sm:text-[11px]">
+                                        {Math.round(survivalStats.cansancio)}%
+                                    </span>
+                                </div>
+                                <div className="w-full bg-[#20180e] border border-amber-950/80 h-2.5 rounded-full overflow-hidden p-[1px]">
+                                    <div
+                                        className={`h-full rounded-full transition-all duration-150 ${
+                                            survivalStats.isFatigued
+                                                ? 'bg-gradient-to-r from-red-500 to-amber-500 animate-pulse'
+                                                : 'bg-gradient-to-r from-amber-600 via-amber-500 to-yellow-400 shadow-[0_0_8px_rgba(245,158,11,0.5)]'
+                                        }`}
+                                        style={{ width: `${Math.max(0, Math.min(100, survivalStats.cansancio))}%` }}
+                                    />
+                                </div>
                             </div>
-                        </>
-                    ) : (
-                        <div className="flex items-center gap-2">
-                            <button
-                                onClick={() => pixiRef.current?.resetPosition()}
-                                className="bg-[#181926] hover:bg-[#232538] border border-gray-700 text-gray-300 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
-                                title="Volver al inicio de la calle (R)"
-                            >
-                                <RotateCcw size={13} />
-                                <span>Reset Posición</span>
-                            </button>
-                            <Link
-                                href="/tools/sprites"
-                                className="bg-[#1f212e] hover:bg-[#2a2d3e] border border-yellow-500/40 text-yellow-400 font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 transition-colors"
-                            >
-                                <Zap size={13} />
-                                <span>Generador Sprites</span>
-                            </Link>
-                            <Link
-                                href="/"
-                                className="bg-black/70 hover:bg-black border border-gray-700 text-gray-300 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors"
-                            >
-                                <ArrowLeft size={13} />
-                                <span>Menú</span>
-                            </Link>
+
+                            {/* 3. HAMBRE */}
+                            <div className="flex flex-col gap-0.5">
+                                <div className="flex justify-between items-center text-[10px] sm:text-[11px] font-black tracking-wider">
+                                    <span className="flex items-center gap-1.5 text-emerald-400">
+                                        <Utensils size={12} className="text-emerald-400" />
+                                        <span>HAMBRE</span>
+                                        {survivalStats.isStarving && (
+                                            <span className="bg-red-600 text-white text-[8px] px-1 rounded animate-pulse">
+                                                ¡HAMBRE!
+                                            </span>
+                                        )}
+                                    </span>
+                                    <span className="text-white font-mono font-bold text-[10px] sm:text-[11px]">
+                                        {Math.round(survivalStats.hambre)}%
+                                    </span>
+                                </div>
+                                <div className="w-full bg-[#0e2017] border border-emerald-950/80 h-2.5 rounded-full overflow-hidden p-[1px]">
+                                    <div
+                                        className={`h-full rounded-full transition-all duration-150 ${
+                                            survivalStats.hambre <= 20
+                                                ? 'bg-gradient-to-r from-red-600 to-orange-500 animate-pulse'
+                                                : 'bg-gradient-to-r from-emerald-600 via-teal-500 to-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.5)]'
+                                        }`}
+                                        style={{ width: `${Math.max(0, Math.min(100, survivalStats.hambre))}%` }}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Efectos activos (Poncho Escudo, Turbo Maca, etc.) */}
+                    {(survivalStats.hasPoncho || survivalStats.speedBuffTimeLeft > 0) && (
+                        <div className="flex flex-wrap gap-1 px-1">
+                            {survivalStats.hasPoncho && (
+                                <span className="bg-sky-950/90 border border-sky-400 text-sky-200 text-[9px] font-bold px-2 py-0.5 rounded-md flex items-center gap-1 shadow">
+                                    <Shield size={10} className="text-sky-400" />
+                                    <span>PONCHO ESCUDO ({Math.ceil(survivalStats.ponchoTimeLeft)}s)</span>
+                                </span>
+                            )}
+                            {survivalStats.speedBuffTimeLeft > 0 && (
+                                <span className={`text-[9px] font-bold px-2 py-0.5 rounded-md flex items-center gap-1 shadow ${
+                                    survivalStats.speedBuff > 1
+                                        ? 'bg-yellow-950/90 border border-yellow-400 text-yellow-200'
+                                        : 'bg-orange-950/90 border border-orange-400 text-orange-200'
+                                }`}>
+                                    <span>
+                                        {survivalStats.speedBuff > 1
+                                            ? `⚡ TURBO MACA (${Math.ceil(survivalStats.speedBuffTimeLeft)}s)`
+                                            : `💩 RESBALÓN (${Math.ceil(survivalStats.speedBuffTimeLeft)}s)`}
+                                    </span>
+                                </span>
+                            )}
                         </div>
                     )}
                 </div>
+
+                {/* LADO DERECHO: UBICACIÓN, DISTANCIA Y BOTÓN PAUSA (Fiel al Mockup) */}
+                <div className="flex items-center gap-2 sm:gap-3 pointer-events-auto">
+                    {/* Píldora de Ubicación */}
+                    <div className="bg-[#0a0c13]/92 border border-gray-800 px-3.5 py-2 rounded-xl flex items-center gap-2 shadow-xl backdrop-blur-md">
+                        <span className="w-2.5 h-2.5 rotate-45 bg-[#e62329] border border-white inline-block shadow-sm" />
+                        <span className="text-[11px] sm:text-xs font-black tracking-wider text-gray-200">
+                            AV. ABANCAY ➔ VÍA EXPRESA
+                        </span>
+                    </div>
+
+                    {/* Contador de Distancia */}
+                    <div className="bg-[#0a0c13]/92 border border-gray-800 px-3.5 sm:px-4 py-1.5 rounded-xl flex flex-col items-center justify-center shadow-xl backdrop-blur-md min-w-[85px] sm:min-w-[95px]">
+                        <span className="text-[8px] sm:text-[9px] font-bold text-gray-400 uppercase tracking-widest">
+                            DISTANCIA
+                        </span>
+                        <span className="text-sm sm:text-base font-black text-amber-400 font-mono tracking-tight">
+                            {Math.round(totalDistance)} m
+                        </span>
+                    </div>
+
+                    {/* Botón de Pausa */}
+                    <button
+                        onClick={() => setIsPaused((prev) => !prev)}
+                        className="w-10 h-10 sm:w-11 sm:h-11 bg-[#0a0c13]/92 hover:bg-[#1a2030] active:bg-[#232b40] border border-gray-700/80 rounded-xl flex items-center justify-center text-white transition-all active:scale-95 shadow-xl cursor-pointer"
+                        title="Pausar juego (P o Escape)"
+                    >
+                        {isPaused ? <Play size={18} className="fill-white ml-0.5" /> : <Pause size={18} className="fill-white" />}
+                    </button>
+                </div>
             </div>
 
-            {/* DOCK INFERIOR: Botones de Prueba de Acciones (Modo Práctica) */}
+            {/* ALERTA DE PERSECUCIÓN EN MODO MISIÓN */}
+            {gameMode === 'mission' && distanceToThief > 110 && (
+                <div className="absolute top-20 right-4 z-20 pointer-events-none bg-red-950/90 border-2 border-red-500 text-red-200 text-xs px-3 py-1.5 rounded-xl font-bold animate-pulse shadow-2xl">
+                    ⚠️ ¡El choro está a {distanceToThief}m! (¡A los 150m se fuga!)
+                </div>
+            )}
+
+            {/* ============================================================== */}
+            {/* CONTROLES INFERIORES: D-PAD, DOCKS DE CATÁLOGO Y ACCIONES      */}
+            {/* ============================================================== */}
+
+            {/* 1. D-PAD VIRTUAL DE 4 DIRECCIONES (Inferior Izquierda) */}
+            <div className="absolute bottom-4 sm:bottom-6 left-4 sm:left-6 z-20 pointer-events-auto select-none">
+                <div className="relative w-28 h-28 sm:w-32 sm:h-32 grid grid-cols-3 grid-rows-3 gap-1 sm:gap-1.5 p-1 sm:p-1.5 bg-[#080a10]/80 border border-cyan-900/35 rounded-2xl backdrop-blur-md shadow-2xl">
+                    <div />
+                    {/* ARRIBA: SALTAR */}
+                    <button
+                        onPointerDown={() => pixiRef.current?.jump()}
+                        className="flex items-center justify-center bg-[#131625]/90 hover:bg-[#1f243b] active:bg-[#2b3252] border border-gray-700/80 rounded-xl text-gray-200 transition-all active:scale-95 cursor-pointer shadow-md"
+                        title="Saltar / Doble Salto (W / ↑)"
+                    >
+                        <ArrowUp size={20} className="stroke-[2.5]" />
+                    </button>
+                    <div />
+
+                    {/* IZQUIERDA: RETROCEDER */}
+                    <button
+                        onPointerDown={() => pixiRef.current?.setVirtualKey('left', true)}
+                        onPointerUp={() => pixiRef.current?.setVirtualKey('left', false)}
+                        onPointerLeave={() => pixiRef.current?.setVirtualKey('left', false)}
+                        className="flex items-center justify-center bg-[#131625]/90 hover:bg-[#1f243b] active:bg-[#2b3252] border border-gray-700/80 rounded-xl text-gray-200 transition-all active:scale-95 cursor-pointer shadow-md"
+                        title="Retroceder (A / ←)"
+                    >
+                        <ArrowLeft size={20} className="stroke-[2.5]" />
+                    </button>
+
+                    {/* CENTRO */}
+                    <div className="flex items-center justify-center">
+                        <div className="w-2.5 h-2.5 rounded-full bg-cyan-500/40" />
+                    </div>
+
+                    {/* DERECHA: AVANZAR / CORRER (Resaltado en Cyan Glow como el Mockup) */}
+                    <button
+                        onPointerDown={() => {
+                            pixiRef.current?.setVirtualKey('right', true);
+                            pixiRef.current?.setVirtualKey('sprint', true);
+                        }}
+                        onPointerUp={() => {
+                            pixiRef.current?.setVirtualKey('right', false);
+                            pixiRef.current?.setVirtualKey('sprint', false);
+                        }}
+                        onPointerLeave={() => {
+                            pixiRef.current?.setVirtualKey('right', false);
+                            pixiRef.current?.setVirtualKey('sprint', false);
+                        }}
+                        className="flex items-center justify-center bg-cyan-950/85 hover:bg-cyan-900 active:bg-cyan-800 border-2 border-cyan-400 rounded-xl text-cyan-300 transition-all active:scale-95 cursor-pointer shadow-[0_0_15px_rgba(6,182,212,0.6)]"
+                        title="Avanzar / Correr (D / →)"
+                    >
+                        <ArrowRight size={22} className="stroke-[3]" />
+                    </button>
+
+                    <div />
+                    {/* ABAJO: AGACHARSE */}
+                    <button
+                        onPointerDown={() => pixiRef.current?.setVirtualKey('duck', true)}
+                        onPointerUp={() => pixiRef.current?.setVirtualKey('duck', false)}
+                        onPointerLeave={() => pixiRef.current?.setVirtualKey('duck', false)}
+                        className="flex items-center justify-center bg-[#131625]/90 hover:bg-[#1f243b] active:bg-[#2b3252] border border-gray-700/80 rounded-xl text-gray-200 transition-all active:scale-95 cursor-pointer shadow-md"
+                        title="Agacharse (S / ↓)"
+                    >
+                        <ArrowDown size={20} className="stroke-[2.5]" />
+                    </button>
+                    <div />
+                </div>
+            </div>
+
+            {/* 2. DOCKS INFERIORES CENTRALES: OBSTÁCULOS DE BARRIO Y POTENCIADORES */}
+            <div className="absolute bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-20 hidden md:flex items-center gap-3 pointer-events-auto select-none">
+                {/* DOCK OBSTÁCULOS DE BARRIO (Rojo) */}
+                <div className="bg-[#14080b]/92 border border-red-900/80 rounded-2xl p-2 px-3 shadow-2xl backdrop-blur-md flex flex-col gap-1.5 min-w-[210px]">
+                    <div className="text-[10px] font-black uppercase tracking-wider text-red-400 flex items-center justify-between">
+                        <span>OBSTÁCULOS DE BARRIO</span>
+                        <span className="text-[8px] text-red-400/70">ESQUIVAR</span>
+                    </div>
+                    <div className="flex items-center justify-center gap-2.5">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src="/items/hueco.png" alt="Hueco" title="Hueco en la pista" className="w-8 h-8 object-contain pixelated hover:scale-125 transition-transform" />
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src="/items/cono.png" alt="Cono" title="Cono de tránsito" className="w-7 h-7 object-contain pixelated hover:scale-125 transition-transform" />
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src="/items/perro_echado.png" alt="Perro echado" title="Firulais durmiendo" className="w-10 h-7 object-contain pixelated hover:scale-125 transition-transform" />
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src="/items/borracho.png" alt="Borracho" title="Borracho en la vereda" className="w-11 h-7 object-contain pixelated hover:scale-125 transition-transform" />
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src="/items/maceta_volcada.png" alt="Maceta volcada" title="Maceta volcada" className="w-8 h-8 object-contain pixelated hover:scale-125 transition-transform" />
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src="/items/carrito_ambulante.png" alt="Carrito ambulante" title="Carrito ambulante (Requiere Doble Salto)" className="w-8 h-8 object-contain pixelated hover:scale-125 transition-transform" />
+                    </div>
+                </div>
+
+                {/* DOCK POTENCIADORES (Verde) */}
+                <div className="bg-[#08140f]/92 border border-emerald-900/80 rounded-2xl p-2 px-3 shadow-2xl backdrop-blur-md flex flex-col gap-1.5 min-w-[210px]">
+                    <div className="text-[10px] font-black uppercase tracking-wider text-emerald-400 flex items-center justify-between">
+                        <span>POTENCIADORES</span>
+                        <span className="text-[8px] text-emerald-400/70">RECOLECTAR</span>
+                    </div>
+                    <div className="flex items-center justify-center gap-2.5">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src="/items/emoliente.png" alt="Emoliente" title="Emoliente caliente (-cansancio)" className="w-7 h-7 object-contain pixelated hover:scale-125 transition-transform" />
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src="/items/chicha.png" alt="Chicha" title="Chicha morada (-cansancio)" className="w-7 h-7 object-contain pixelated hover:scale-125 transition-transform" />
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src="/items/pan_chicharron.png" alt="Pan con chicharrón" title="Pan con chicharrón (+hambre)" className="w-8 h-8 object-contain pixelated hover:scale-125 transition-transform" />
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src="/items/canchita.png" alt="Canchita" title="Canchita serrana (+hambre)" className="w-8 h-8 object-contain pixelated hover:scale-125 transition-transform" />
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src="/items/picarones.png" alt="Picarones" title="Picarones (+hambre)" className="w-8 h-8 object-contain pixelated hover:scale-125 transition-transform" />
+                    </div>
+                </div>
+            </div>
+
+            {/* 3. BOTONES DE ACCIÓN (Inferior Derecha: Salto y Ataque Arcade) */}
+            <div className="absolute bottom-4 sm:bottom-6 right-4 sm:right-6 z-20 flex items-center gap-3 sm:gap-4 pointer-events-auto select-none">
+                {/* BOTÓN SALTAR (Azul brillante circular con Doble Salto) */}
+                <div className="flex flex-col items-center gap-1">
+                    <button
+                        onPointerDown={() => pixiRef.current?.jump()}
+                        className="w-15 h-15 sm:w-17 sm:h-17 rounded-full bg-gradient-to-b from-[#1e88e5] to-[#1565c0] border-2 border-[#64b5f6] shadow-[0_0_20px_rgba(30,136,229,0.6)] flex items-center justify-center text-white active:scale-90 transition-all cursor-pointer hover:brightness-110"
+                        title="Saltar / Doble Salto (Espacio / W)"
+                    >
+                        <ArrowUp size={28} className="stroke-[3]" />
+                    </button>
+                    <span className="text-[10px] font-black uppercase tracking-wider text-sky-300 drop-shadow">
+                        SALTAR
+                    </span>
+                </div>
+
+                {/* BOTÓN ATACAR (Rojo carmesí circular) */}
+                <div className="flex flex-col items-center gap-1">
+                    <button
+                        onPointerDown={() => pixiRef.current?.triggerAttack()}
+                        className="w-15 h-15 sm:w-17 sm:h-17 rounded-full bg-gradient-to-b from-[#e53935] to-[#b71c1c] border-2 border-[#ef5350] shadow-[0_0_20px_rgba(229,57,53,0.6)] flex items-center justify-center text-white active:scale-90 transition-all cursor-pointer hover:brightness-110"
+                        title="Atacar (J / Click)"
+                    >
+                        <span className="text-2xl select-none leading-none">👊</span>
+                    </button>
+                    <span className="text-[10px] font-black uppercase tracking-wider text-rose-300 drop-shadow">
+                        ATACAR
+                    </span>
+                </div>
+            </div>
+
+            {/* SANDBOX DEV DOCK (Solo visible en modo práctica si se expande) */}
             {gameMode === 'practice' && (
                 showActionBar ? (
-                    <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-20 flex flex-wrap items-center justify-center gap-2 bg-[#0c0d14]/92 border border-emerald-500/35 p-2 px-4 rounded-2xl shadow-2xl backdrop-blur-md transition-all animate-in fade-in duration-200">
-                        {/* Indicador de Acción Activa */}
-                        <div className="flex items-center gap-1.5 bg-[#171a29] border border-gray-700/80 px-3 py-1.5 rounded-xl mr-1">
-                            <span className="text-[10px] text-gray-400 uppercase tracking-widest">Acción:</span>
-                            <span className="text-xs font-black text-emerald-400 uppercase tracking-wider">
-                                {activeActionName}
-                            </span>
+                    <div className="absolute top-24 left-4 z-20 flex flex-wrap items-center gap-1.5 bg-[#0c0d14]/92 border border-emerald-500/35 p-2 rounded-2xl shadow-2xl backdrop-blur-md max-w-sm pointer-events-auto">
+                        <div className="w-full flex items-center justify-between text-[10px] font-bold text-gray-400 pb-1 border-b border-gray-800">
+                            <span>PROBAR ANIMACIONES (SANDBOX)</span>
+                            <button
+                                onClick={() => setShowActionBar(false)}
+                                className="text-gray-400 hover:text-white"
+                            >
+                                <ChevronDown size={14} />
+                            </button>
                         </div>
-
-                        {/* Botón Caminar */}
-                        <button
-                            onClick={() => pixiRef.current?.stepWalk()}
-                            className="bg-[#171923] hover:bg-[#222533] border border-gray-700 text-gray-200 hover:text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
-                            title="Presiona A o D para caminar"
-                        >
-                            <Footprints size={14} className="text-cyan-400" />
-                            <span>Caminar (A/D)</span>
-                        </button>
-
-                        {/* Botón Correr */}
-                        <button
-                            onClick={() => pixiRef.current?.stepRun()}
-                            className="bg-[#171923] hover:bg-[#222533] border border-gray-700 text-gray-200 hover:text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
-                            title="Mantén Shift mientras caminas para correr"
-                        >
-                            <Zap size={14} className="text-yellow-400" />
-                            <span>Correr (Shift)</span>
-                        </button>
-
-                        {/* Botón Saltar */}
-                        <button
-                            onClick={() => pixiRef.current?.jump()}
-                            className="bg-[#171923] hover:bg-[#222533] border border-gray-700 text-gray-200 hover:text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
-                            title="Presiona Espacio o W para saltar"
-                        >
-                            <ArrowUp size={14} className="text-purple-400" />
-                            <span>Saltar (Espacio)</span>
-                        </button>
-
-                        {/* Botón Agacharse */}
-                        <button
-                            onClick={() => pixiRef.current?.duck()}
-                            className="bg-[#171923] hover:bg-[#222533] border border-gray-700 text-gray-200 hover:text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
-                            title="Presiona S o Flecha Abajo para agacharte"
-                        >
-                            <ArrowDown size={14} className="text-sky-400" />
-                            <span>Agacharse (S/↓)</span>
-                        </button>
-
-                        {/* Botón Atacar */}
-                        <button
-                            onClick={() => pixiRef.current?.triggerAttack()}
-                            className="bg-red-950/70 hover:bg-red-900/90 border border-red-500/70 text-red-200 hover:text-white px-3.5 py-1.5 rounded-xl text-xs font-black flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-lg shadow-red-950/40"
-                            title="Presiona J, Z o haz clic en el canvas para golpear"
-                        >
-                            <Swords size={14} className="text-red-400 animate-pulse" />
-                            <span>¡Atacar! (J / Click)</span>
-                        </button>
-
-                        {/* Botón Daño */}
-                        <button
-                            onClick={() => pixiRef.current?.triggerDamage()}
-                            className="bg-[#181926] hover:bg-[#232538] border border-amber-600/50 text-amber-300 hover:text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
-                            title="Presiona H para recibir daño"
-                        >
-                            <ShieldAlert size={14} className="text-amber-400" />
-                            <span>Probar Daño (H)</span>
-                        </button>
-
-                        {/* Botón Muerte / Levantarse */}
-                        <button
-                            onClick={() => {
-                                if (isPlayerDead) {
-                                    pixiRef.current?.revivePlayer();
-                                } else {
-                                    pixiRef.current?.triggerDeath();
-                                }
-                            }}
-                            className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer ${
-                                isPlayerDead
-                                    ? 'bg-amber-950/80 border border-amber-500 text-amber-300 animate-bounce'
-                                    : 'bg-[#181216] hover:bg-[#241720] border border-red-800/60 text-red-300'
-                            }`}
-                            title="Presiona M para probar la animación de muerte o levantarse"
-                        >
-                            <Skull size={14} className={isPlayerDead ? 'text-amber-400' : 'text-red-400'} />
-                            <span>{isPlayerDead ? '¡Levantarse!' : 'Probar Muerte (M)'}</span>
-                        </button>
-
-                        {/* Botón Comer */}
                         <button
                             onClick={() => pixiRef.current?.triggerEat()}
-                            className="bg-[#181926] hover:bg-[#232538] border border-yellow-600/50 text-yellow-300 hover:text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
-                            title="Probar animación Comer (Snack)"
+                            className="bg-[#181926] hover:bg-[#232538] border border-yellow-600/50 text-yellow-300 px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 cursor-pointer"
                         >
-                            <Utensils size={14} className="text-yellow-400" />
-                            <span>Comer</span>
+                            <Utensils size={11} /> Comer
                         </button>
-
-                        {/* Botón Beber */}
                         <button
                             onClick={() => pixiRef.current?.triggerDrink()}
-                            className="bg-[#181926] hover:bg-[#232538] border border-teal-600/50 text-teal-300 hover:text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
-                            title="Probar animación Beber (Emoliente/Maca)"
+                            className="bg-[#181926] hover:bg-[#232538] border border-teal-600/50 text-teal-300 px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 cursor-pointer"
                         >
-                            <Volume2 size={14} className="text-teal-400" />
-                            <span>Beber</span>
+                            <Volume2 size={11} /> Beber
                         </button>
-
-                        {/* Botón Cansancio */}
                         <button
                             onClick={() => pixiRef.current?.triggerFatigue()}
-                            className="bg-[#181926] hover:bg-[#232538] border border-orange-600/50 text-orange-300 hover:text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
-                            title="Probar animación Cansancio / Fatiga extrema"
+                            className="bg-[#181926] hover:bg-[#232538] border border-orange-600/50 text-orange-300 px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 cursor-pointer"
                         >
-                            <Zap size={14} className="text-orange-400" />
-                            <span>Cansancio</span>
+                            <Zap size={11} /> Cansancio
                         </button>
-
-                        {/* Botón Hambre */}
                         <button
                             onClick={() => pixiRef.current?.triggerHunger()}
-                            className="bg-[#181926] hover:bg-[#232538] border border-rose-600/50 text-rose-300 hover:text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
-                            title="Probar animación Hambre / Inanición"
+                            className="bg-[#181926] hover:bg-[#232538] border border-rose-600/50 text-rose-300 px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 cursor-pointer"
                         >
-                            <Flame size={14} className="text-rose-400" />
-                            <span>Hambre</span>
+                            <Flame size={11} /> Hambre
                         </button>
-
-                        {/* Toggle Muñeco Dummy */}
+                        <button
+                            onClick={() => pixiRef.current?.triggerDamage()}
+                            className="bg-[#181926] hover:bg-[#232538] border border-amber-600/50 text-amber-300 px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 cursor-pointer"
+                        >
+                            <ShieldAlert size={11} /> Daño
+                        </button>
+                        <button
+                            onClick={() => {
+                                if (isPlayerDead) pixiRef.current?.revivePlayer();
+                                else pixiRef.current?.triggerDeath();
+                            }}
+                            className="bg-[#181926] hover:bg-[#232538] border border-red-600/50 text-red-300 px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 cursor-pointer"
+                        >
+                            <Skull size={11} /> {isPlayerDead ? 'Revivir' : 'Muerte'}
+                        </button>
                         <button
                             onClick={() => setDummyActive(!dummyActive)}
-                            className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                                dummyActive
-                                    ? 'bg-emerald-950/70 border border-emerald-500/60 text-emerald-300'
-                                    : 'bg-gray-900 border border-gray-700 text-gray-500'
-                            }`}
-                            title="Mostrar u ocultar ladrón de pruebas"
+                            className="bg-[#181926] hover:bg-[#232538] border border-emerald-600/50 text-emerald-300 px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 cursor-pointer"
                         >
-                            <Target size={14} />
-                            <span>Sparring: {dummyActive ? 'ON' : 'OFF'}</span>
-                        </button>
-
-                        {/* Botón Minimizar / Ocultar Barra */}
-                        <button
-                            onClick={() => setShowActionBar(false)}
-                            className="bg-black/60 hover:bg-black/90 border border-gray-700/80 hover:border-gray-500 text-gray-400 hover:text-white px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition-all active:scale-95 cursor-pointer ml-1"
-                            title="Ocultar barra de acciones para ver el movimiento completo (Tecla C)"
-                        >
-                            <ChevronDown size={14} />
-                            <span className="hidden sm:inline">Ocultar</span>
+                            <Target size={11} /> Sparring: {dummyActive ? 'ON' : 'OFF'}
                         </button>
                     </div>
                 ) : (
-                    /* Píldora compacta cuando la barra está oculta */
                     <button
                         onClick={() => setShowActionBar(true)}
-                        className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 bg-[#0c0d14]/90 hover:bg-[#151724] border border-emerald-500/50 hover:border-emerald-400 text-emerald-300 hover:text-white px-4 py-2 rounded-full text-xs font-bold flex items-center gap-2 shadow-2xl backdrop-blur-md transition-all active:scale-95 cursor-pointer group"
-                        title="Mostrar barra de acciones (Tecla C)"
+                        className="absolute top-24 left-4 z-20 bg-[#0c0d14]/90 hover:bg-[#151724] border border-emerald-500/50 text-emerald-300 px-3 py-1.5 rounded-full text-[10px] font-bold flex items-center gap-1.5 shadow-xl backdrop-blur-md cursor-pointer pointer-events-auto"
                     >
-                        <SlidersHorizontal size={13} className="text-emerald-400 group-hover:rotate-45 transition-transform" />
-                        <span>Ver Controles ({activeActionName})</span>
-                        <ChevronUp size={13} className="text-emerald-400" />
+                        <SlidersHorizontal size={11} />
+                        <span>Panel Pruebas ({activeActionName})</span>
+                        <ChevronUp size={11} />
                     </button>
                 )
             )}
 
-            {/* Guía de Controles Inferior (Modo Misión) */}
-            {gameMode === 'mission' && (
-                <div className="absolute bottom-4 left-6 pointer-events-none z-20 hidden md:flex flex-wrap items-center gap-3 bg-black/80 border border-gray-700 px-4 py-2 rounded-xl text-xs text-gray-300 backdrop-blur shadow-2xl">
-                    <div>
-                        <span className="bg-gray-800 border border-gray-600 px-1.5 py-0.5 rounded text-white font-bold">A/D</span>{' '}
-                        Caminar
+            {/* MODAL DE PAUSA */}
+            {isPaused && (
+                <div className="absolute inset-0 bg-black/80 backdrop-blur-md flex flex-col items-center justify-center z-50 p-6 animate-in fade-in duration-200">
+                    <div className="bg-[#0f111a] border-2 border-cyan-500/60 p-6 sm:p-8 rounded-3xl max-w-sm w-full shadow-2xl text-center flex flex-col gap-4">
+                        <div className="inline-block bg-cyan-500/20 text-cyan-300 border border-cyan-500/50 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest mx-auto">
+                            ⏸️ PAUSA
+                        </div>
+                        <h2 className="text-2xl font-black text-white tracking-widest uppercase">
+                            JUEGO EN PAUSA
+                        </h2>
+                        <p className="text-xs text-gray-400">
+                            Tómate un respiro, causita. ¿Qué hacemos ahora?
+                        </p>
+
+                        <div className="flex flex-col gap-2.5 pt-2">
+                            {/* Reanudar */}
+                            <button
+                                onClick={() => setIsPaused(false)}
+                                className="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-black py-3 rounded-xl uppercase text-xs tracking-wider transition-all cursor-pointer shadow-lg shadow-cyan-900/40 active:scale-95"
+                            >
+                                Continuar Jugando
+                            </button>
+
+                            {/* Selector de Modo */}
+                            <div className="flex items-center justify-between bg-[#151824] border border-gray-800 p-2.5 rounded-xl text-xs">
+                                <span className="text-gray-400 font-bold">Modo actual:</span>
+                                <button
+                                    onClick={() => {
+                                        switchMode(gameMode === 'mission' ? 'practice' : 'mission');
+                                    }}
+                                    className="text-amber-400 font-black hover:underline cursor-pointer flex items-center gap-1"
+                                >
+                                    {gameMode === 'mission' ? '🔥 Misión Choro' : '🎮 Modo Práctica'}
+                                </button>
+                            </div>
+
+                            {/* Velocidad */}
+                            <div className="flex items-center justify-between bg-[#151824] border border-gray-800 p-2 px-3 rounded-xl">
+                                <span className="text-xs text-gray-400 font-bold">Velocidad:</span>
+                                <div className="flex gap-1">
+                                    {([0.5, 0.75, 1.0] as const).map((spd) => (
+                                        <button
+                                            key={spd}
+                                            onClick={() => setGameSpeed(spd)}
+                                            className={`px-2 py-0.5 rounded text-[10px] font-bold cursor-pointer transition-colors ${
+                                                gameSpeed === spd
+                                                    ? 'bg-amber-500 text-black font-black'
+                                                    : 'text-gray-400 hover:text-white'
+                                            }`}
+                                        >
+                                            {spd}x
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Música */}
+                            <button
+                                onClick={toggleMusic}
+                                className="w-full bg-[#181a28] hover:bg-[#23263b] border border-gray-700 text-gray-200 font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                            >
+                                {isMusicPlaying ? <Volume2 size={14} className="text-amber-400" /> : <VolumeX size={14} />}
+                                <span>{isMusicPlaying ? 'Música Retro: ON' : 'Música Retro: OFF'}</span>
+                            </button>
+
+                            {/* Reiniciar */}
+                            <button
+                                onClick={() => {
+                                    setIsPaused(false);
+                                    resetGame();
+                                }}
+                                className="w-full bg-[#181a28] hover:bg-[#23263b] border border-gray-700 text-gray-200 font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                            >
+                                <RotateCcw size={14} />
+                                <span>Reiniciar Carrera</span>
+                            </button>
+
+                            {/* Menú Principal */}
+                            <Link
+                                href="/"
+                                className="w-full border border-gray-800 hover:border-gray-600 text-gray-400 hover:text-white py-2.5 rounded-xl text-xs font-bold transition-colors block text-center"
+                            >
+                                Salir al Menú Principal
+                            </Link>
+                        </div>
                     </div>
-                    <div>
-                        <span className="bg-gray-800 border border-gray-600 px-1.5 py-0.5 rounded text-white font-bold">SHIFT</span>{' '}
-                        Correr
-                    </div>
-                    <div>
-                        <span className="bg-gray-800 border border-gray-600 px-1.5 py-0.5 rounded text-white font-bold">ESPACIO</span>{' '}
-                        Saltar
-                    </div>
-                    <div>
-                        <span className="bg-gray-800 border border-gray-600 px-1.5 py-0.5 rounded text-white font-bold">S / ↓</span>{' '}
-                        Agacharse
-                    </div>
-                    <div>
-                        <span className="bg-gray-800 border border-gray-600 px-1.5 py-0.5 rounded text-white font-bold">J</span>{' '}
-                        Atacar
-                    </div>
-                    <div className="text-amber-400 font-bold">⚡ ¡No dejes que pase los 150m o se fuga!</div>
                 </div>
             )}
 
