@@ -297,5 +297,20 @@
       "height": 188
     },
     "updatedAt": "2026-09-26T03:34:44.306Z"
+  },
+  {
+    "id": "poncho",
+    "name": "Poncho",
+    "label": "PONCHO ANDINO",
+    "category": "potenciador",
+    "subCategory": "especial",
+    "tier": "alto",
+    "frequency": "rara",
+    "description": "Escudo temporal sagrado. Te hace inmune al próximo obstáculo durante 8s.",
+    "effects": {
+      "escudoDuracion": 8,
+      "mechanicHint": "Salto alto de riesgo"
+    },
+    "imageUrl": "/items/poncho.png"
   }
 ]

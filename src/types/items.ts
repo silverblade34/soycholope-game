@@ -59,6 +59,7 @@ export const DEFAULT_ITEMS_CATALOG: ItemDefinition[] = [
         subCategory: 'obstaculo_bajo',
         tier: 'piso',
         frequency: 'media',
+        imageUrl: '/items/hueco.png',
         description: 'Bache o zanja típica de pista limeña. Te detiene 0.5s y quita vida.',
         effects: {
             vidaDelta: -15,
@@ -74,6 +75,7 @@ export const DEFAULT_ITEMS_CATALOG: ItemDefinition[] = [
         subCategory: 'obstaculo_bajo',
         tier: 'piso',
         frequency: 'media',
+        imageUrl: '/items/cono.png',
         description: 'Cono de obra o desvío. Provoca un trompicón y empuja hacia atrás.',
         effects: {
             vidaDelta: -5,
@@ -88,6 +90,7 @@ export const DEFAULT_ITEMS_CATALOG: ItemDefinition[] = [
         subCategory: 'obstaculo_bajo',
         tier: 'piso',
         frequency: 'muy_frecuente',
+        imageUrl: '/items/caca.png',
         description: 'Resbalón cómico en la vereda. Reduce 20% de velocidad y sube cansancio.',
         effects: {
             vidaDelta: 0,
@@ -105,6 +108,7 @@ export const DEFAULT_ITEMS_CATALOG: ItemDefinition[] = [
         subCategory: 'obstaculo_bloqueo',
         tier: 'piso',
         frequency: 'media',
+        imageUrl: '/items/basura.png',
         description: 'Montículo de basura en la esquina. Bloquea el paso y quita 10 de vida.',
         effects: {
             vidaDelta: -10,
@@ -119,6 +123,7 @@ export const DEFAULT_ITEMS_CATALOG: ItemDefinition[] = [
         subCategory: 'obstaculo_alto',
         tier: 'alto',
         frequency: 'media',
+        imageUrl: '/items/cable.png',
         description: 'Cable clandestino o descolgado de poste. Te engancha y pierdes 1s de control.',
         effects: {
             vidaDelta: 0,
@@ -134,6 +139,7 @@ export const DEFAULT_ITEMS_CATALOG: ItemDefinition[] = [
         subCategory: 'obstaculo_alto',
         tier: 'alto',
         frequency: 'media',
+        imageUrl: '/items/cordel.png',
         description: 'Tendedero cruzado entre callejones. Tropiezo cómico y -5 de vida.',
         effects: {
             vidaDelta: -5,
@@ -153,6 +159,7 @@ export const DEFAULT_ITEMS_CATALOG: ItemDefinition[] = [
         subCategory: 'bebida',
         tier: 'medio',
         frequency: 'media',
+        imageUrl: '/items/emoliente.png',
         description: 'Bebida medicinal y relajante. Reduce 40% de cansancio de inmediato.',
         effects: {
             cansancioDelta: -40,
@@ -167,6 +174,7 @@ export const DEFAULT_ITEMS_CATALOG: ItemDefinition[] = [
         subCategory: 'bebida',
         tier: 'alto',
         frequency: 'rara',
+        imageUrl: '/items/maca.png',
         description: 'Energizante andino supremo. Otorga +20% de velocidad por 5 segundos.',
         effects: {
             velocidadFactor: 1.2,
@@ -183,6 +191,7 @@ export const DEFAULT_ITEMS_CATALOG: ItemDefinition[] = [
         subCategory: 'bebida',
         tier: 'medio',
         frequency: 'media',
+        imageUrl: '/items/chicha_morada.png',
         description: 'Bebida nutritiva y refrescante de maíz morado. Recupera +15 de Vida.',
         effects: {
             vidaDelta: 15,
@@ -202,6 +211,7 @@ export const DEFAULT_ITEMS_CATALOG: ItemDefinition[] = [
         subCategory: 'comida',
         tier: 'medio',
         frequency: 'media',
+        imageUrl: '/items/anticucho.png',
         description: 'Snack tradicional con papa y ají. Sacia +25 de Hambre.',
         effects: {
             hambreDelta: 25,
@@ -216,6 +226,7 @@ export const DEFAULT_ITEMS_CATALOG: ItemDefinition[] = [
         subCategory: 'comida',
         tier: 'medio',
         frequency: 'media',
+        imageUrl: '/items/pan_chicharron.png',
         description: 'Mega desayuno con camote y salsa criolla. +50 Hambre pero -10% Vel por 4s (pesado).',
         effects: {
             hambreDelta: 50,
@@ -232,6 +243,7 @@ export const DEFAULT_ITEMS_CATALOG: ItemDefinition[] = [
         subCategory: 'comida',
         tier: 'piso',
         frequency: 'muy_frecuente',
+        imageUrl: '/items/cancha_serrana.png',
         description: 'Snack salado frecuente (tipo monedas de Mario). Rellena +10 de Hambre.',
         effects: {
             hambreDelta: 10,
@@ -246,6 +258,7 @@ export const DEFAULT_ITEMS_CATALOG: ItemDefinition[] = [
         subCategory: 'comida',
         tier: 'alto',
         frequency: 'rara',
+        imageUrl: '/items/picarones.png',
         description: 'Delicia dulce peruana premium. +30 de Hambre y +15 de Vida.',
         effects: {
             hambreDelta: 30,
@@ -265,6 +278,7 @@ export const DEFAULT_ITEMS_CATALOG: ItemDefinition[] = [
         subCategory: 'especial',
         tier: 'alto',
         frequency: 'rara',
+        imageUrl: '/items/poncho.png',
         description: 'Escudo temporal sagrado. Te hace inmune al próximo obstáculo durante 8s.',
         effects: {
             escudoDuracion: 8.0,

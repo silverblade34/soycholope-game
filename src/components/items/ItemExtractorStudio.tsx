@@ -49,7 +49,7 @@ export function ItemExtractorStudio() {
     // Opciones de limpieza de fondo (Chroma / Magic Eraser)
     const [removeBg, setRemoveBg] = useState<boolean>(true);
     const [bgTolerance, setBgTolerance] = useState<number>(28);
-    const [bgColorChoice, setBgColorChoice] = useState<'auto' | 'white' | 'black'>('auto');
+    const [bgColorChoice, setBgColorChoice] = useState<'auto' | 'white' | 'black' | 'none'>('auto');
 
     // Estado de guardado
     const [isSaving, setIsSaving] = useState<boolean>(false);
@@ -134,9 +134,19 @@ export function ItemExtractorStudio() {
             cropBox.height
         );
 
-        if (removeBg) {
+        if (removeBg && bgColorChoice !== 'none') {
             const imgData = ctx.getImageData(0, 0, cropBox.width, cropBox.height);
             const data = imgData.data;
+
+            // Comprobar si las esquinas del área ya tienen transparencia
+            const cornerIndices = [0, (cropBox.width - 1) * 4, ((cropBox.height - 1) * cropBox.width) * 4];
+            const hasTransparentCorner = cornerIndices.some((c) => data[c + 3] < 30);
+
+            // Si las esquinas ya son transparentes y está en auto, no alterar para no arruinar tonos oscuros (como bolsas de basura negras)
+            if (bgColorChoice === 'auto' && hasTransparentCorner) {
+                // Mantener transparencia nativa intacta
+                return;
+            }
 
             let targetR = 255;
             let targetG = 255;
@@ -147,13 +157,15 @@ export function ItemExtractorStudio() {
                 targetG = 0;
                 targetB = 0;
             } else if (bgColorChoice === 'auto') {
-                const corners = [0, (cropBox.width - 1) * 4, ((cropBox.height - 1) * cropBox.width) * 4];
-                targetR = Math.round(corners.reduce((acc, c) => acc + data[c], 0) / corners.length);
-                targetG = Math.round(corners.reduce((acc, c) => acc + data[c + 1], 0) / corners.length);
-                targetB = Math.round(corners.reduce((acc, c) => acc + data[c + 2], 0) / corners.length);
+                const opaqueCorners = cornerIndices.filter((c) => data[c + 3] >= 100);
+                if (opaqueCorners.length === 0) return;
+                targetR = Math.round(opaqueCorners.reduce((acc, c) => acc + data[c], 0) / opaqueCorners.length);
+                targetG = Math.round(opaqueCorners.reduce((acc, c) => acc + data[c + 1], 0) / opaqueCorners.length);
+                targetB = Math.round(opaqueCorners.reduce((acc, c) => acc + data[c + 2], 0) / opaqueCorners.length);
             }
 
             for (let i = 0; i < data.length; i += 4) {
+                if (data[i + 3] < 10) continue; // Ya transparente
                 const r = data[i];
                 const g = data[i + 1];
                 const b = data[i + 2];
@@ -484,12 +496,13 @@ export function ItemExtractorStudio() {
                                     <span>Color Fondo:</span>
                                     <select
                                         value={bgColorChoice}
-                                        onChange={(e) => setBgColorChoice(e.target.value as 'auto' | 'white' | 'black')}
+                                        onChange={(e) => setBgColorChoice(e.target.value as 'auto' | 'white' | 'black' | 'none')}
                                         className="bg-[#181a26] border border-gray-700 text-gray-200 text-xs rounded-lg px-2 py-1"
                                     >
-                                        <option value="auto">Automático (Esquinas)</option>
-                                        <option value="white">Blanco (#FFFFFF)</option>
-                                        <option value="black">Negro (#000000)</option>
+                                        <option value="none">Sin procesar (Ya es PNG transparente)</option>
+                                        <option value="auto">Automático (Detectar color esquina)</option>
+                                        <option value="white">Fondo Blanco (#FFFFFF)</option>
+                                        <option value="black">Fondo Negro (#000000)</option>
                                     </select>
                                 </div>
                             </div>

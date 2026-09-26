@@ -1,6 +1,6 @@
 {
   "characterName": "ruben",
-  "updatedAt": "2026-09-25T21:33:53.866Z",
+  "updatedAt": "2026-09-26T14:57:42.765Z",
   "actions": {
     "correr": {
       "name": "correr",
@@ -13,7 +13,7 @@
       "spacing": 0,
       "fps": 10,
       "loop": true,
-      "totalWidth": 1024,
+      "totalWidth": 1005,
       "totalHeight": 341,
       "frameOverrides": {},
       "spriteSheet": "/sprites/ruben/correr/correr.png",
@@ -38,7 +38,7 @@
       "spacing": 0,
       "fps": 6,
       "loop": true,
-      "totalWidth": 2172,
+      "totalWidth": 2170,
       "totalHeight": 724,
       "frameOverrides": {},
       "spriteSheet": "/sprites/ruben/idle/idle.png",
@@ -63,7 +63,7 @@
       "spacing": 0,
       "fps": 10,
       "loop": true,
-      "totalWidth": 2172,
+      "totalWidth": 2170,
       "totalHeight": 724,
       "frameOverrides": {},
       "spriteSheet": "/sprites/ruben/caminar/caminar.png",
@@ -88,7 +88,7 @@
       "spacing": 0,
       "fps": 9,
       "loop": true,
-      "totalWidth": 2172,
+      "totalWidth": 2185,
       "totalHeight": 724,
       "frameOverrides": {
         "1": {
@@ -121,7 +121,7 @@
       "spacing": 0,
       "fps": 12,
       "loop": false,
-      "totalWidth": 2172,
+      "totalWidth": 2330,
       "totalHeight": 724,
       "frameOverrides": {
         "0": {
@@ -166,7 +166,7 @@
       "spacing": 0,
       "fps": 8,
       "loop": true,
-      "totalWidth": 2172,
+      "totalWidth": 2210,
       "totalHeight": 724,
       "frameOverrides": {
         "1": {
@@ -206,7 +206,7 @@
       "spacing": 0,
       "fps": 6,
       "loop": false,
-      "totalWidth": 2172,
+      "totalWidth": 2195,
       "totalHeight": 724,
       "frameOverrides": {
         "0": {
@@ -235,6 +235,113 @@
         "/sprites/ruben/muerte/frames/frame_3.png",
         "/sprites/ruben/muerte/frames/frame_4.png",
         "/sprites/ruben/muerte/frames/frame_5.png"
+      ]
+    },
+    "cansancio": {
+      "name": "cansancio",
+      "label": "CANSANCIO",
+      "frameCount": 5,
+      "frameWidth": 434,
+      "frameHeight": 724,
+      "offsetX": 0,
+      "offsetY": 0,
+      "spacing": 0,
+      "fps": 10,
+      "loop": true,
+      "totalWidth": 2170,
+      "totalHeight": 724,
+      "frameOverrides": {},
+      "spriteSheet": "/sprites/ruben/cansancio/cansancio.png",
+      "spriteSheetRoot": "/sprites/ruben/cansancio.png",
+      "gif": "/sprites/ruben/cansancio/cansancio.gif",
+      "frames": [
+        "/sprites/ruben/cansancio/frames/frame_1.png",
+        "/sprites/ruben/cansancio/frames/frame_2.png",
+        "/sprites/ruben/cansancio/frames/frame_3.png",
+        "/sprites/ruben/cansancio/frames/frame_4.png",
+        "/sprites/ruben/cansancio/frames/frame_5.png"
+      ]
+    },
+    "hambre": {
+      "name": "hambre",
+      "label": "HAMBRE",
+      "frameCount": 5,
+      "frameWidth": 434,
+      "frameHeight": 724,
+      "offsetX": 0,
+      "offsetY": 0,
+      "spacing": 0,
+      "fps": 10,
+      "loop": true,
+      "totalWidth": 2170,
+      "totalHeight": 724,
+      "frameOverrides": {
+        "2": {
+          "x": 898
+        },
+        "3": {
+          "x": 1322
+        }
+      },
+      "spriteSheet": "/sprites/ruben/hambre/hambre.png",
+      "spriteSheetRoot": "/sprites/ruben/hambre.png",
+      "gif": "/sprites/ruben/hambre/hambre.gif",
+      "frames": [
+        "/sprites/ruben/hambre/frames/frame_1.png",
+        "/sprites/ruben/hambre/frames/frame_2.png",
+        "/sprites/ruben/hambre/frames/frame_3.png",
+        "/sprites/ruben/hambre/frames/frame_4.png",
+        "/sprites/ruben/hambre/frames/frame_5.png"
+      ]
+    },
+    "comer": {
+      "name": "comer",
+      "label": "COMER",
+      "frameCount": 5,
+      "frameWidth": 434,
+      "frameHeight": 724,
+      "offsetX": 0,
+      "offsetY": 0,
+      "spacing": 0,
+      "fps": 10,
+      "loop": true,
+      "totalWidth": 2170,
+      "totalHeight": 724,
+      "frameOverrides": {},
+      "spriteSheet": "/sprites/ruben/comer/comer.png",
+      "spriteSheetRoot": "/sprites/ruben/comer.png",
+      "gif": "/sprites/ruben/comer/comer.gif",
+      "frames": [
+        "/sprites/ruben/comer/frames/frame_1.png",
+        "/sprites/ruben/comer/frames/frame_2.png",
+        "/sprites/ruben/comer/frames/frame_3.png",
+        "/sprites/ruben/comer/frames/frame_4.png",
+        "/sprites/ruben/comer/frames/frame_5.png"
+      ]
+    },
+    "beber": {
+      "name": "beber",
+      "label": "BEBER",
+      "frameCount": 5,
+      "frameWidth": 434,
+      "frameHeight": 724,
+      "offsetX": 0,
+      "offsetY": 0,
+      "spacing": 0,
+      "fps": 10,
+      "loop": true,
+      "totalWidth": 2170,
+      "totalHeight": 724,
+      "frameOverrides": {},
+      "spriteSheet": "/sprites/ruben/beber/beber.png",
+      "spriteSheetRoot": "/sprites/ruben/beber.png",
+      "gif": "/sprites/ruben/beber/beber.gif",
+      "frames": [
+        "/sprites/ruben/beber/frames/frame_1.png",
+        "/sprites/ruben/beber/frames/frame_2.png",
+        "/sprites/ruben/beber/frames/frame_3.png",
+        "/sprites/ruben/beber/frames/frame_4.png",
+        "/sprites/ruben/beber/frames/frame_5.png"
       ]
     }
   }

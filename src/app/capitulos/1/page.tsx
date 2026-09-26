@@ -11,6 +11,7 @@ import {
     Zap,
     Footprints,
     ArrowUp,
+    ArrowDown,
     Swords,
     ShieldAlert,
     Skull,
@@ -20,9 +21,12 @@ import {
     Gauge,
     ChevronDown,
     ChevronUp,
-    SlidersHorizontal
+    SlidersHorizontal,
+    Heart,
+    Utensils,
+    Shield
 } from 'lucide-react';
-import type { PixiGameCanvasRef } from '@/components/game/PixiGameCanvas';
+import type { PixiGameCanvasRef, SurvivalStats } from '@/components/game/PixiGameCanvas';
 
 /**
  * Carga dinámica del motor de renderizado PixiJS WebGL sin SSR
@@ -44,7 +48,6 @@ const PixiGameCanvas = dynamic(
 
 /**
  * Sintetizador Web Audio nativo para banda sonora chiptune arcade retro
- * Genera bajo funky, melodía de sintetizador cuadrado y ritmo sin necesidad de archivos externos.
  */
 class RetroArcadeBgm {
     private ctx: AudioContext | null = null;
@@ -85,12 +88,10 @@ class RetroArcadeBgm {
     private tick() {
         if (!this.isPlaying || !this.ctx) return;
         const now = this.ctx.currentTime;
-        const tempo = 84; // Tempo relajado con ritmo clásico beat 'em up (no apresurado)
+        const tempo = 84;
         const stepTime = (60 / tempo) / 2;
 
-        // Línea de bajo estilo beat 'em up clásico (A minor retro)
         const bassProgression = [110, 110, 130.81, 146.83, 110, 164.81, 146.83, 123.47];
-        // Melodía arcade complementaria
         const leadProgression = [440, 0, 523.25, 587.33, 659.25, 587.33, 523.25, 493.88];
 
         const bassFreq = bassProgression[this.step % bassProgression.length];
@@ -155,21 +156,35 @@ export default function CapituloUnoPage() {
     const pixiRef = useRef<PixiGameCanvasRef | null>(null);
     const bgmRef = useRef<RetroArcadeBgm>(new RetroArcadeBgm());
 
-    // Modo de juego: 'mission' (perseguir al choro) o 'practice' (probar movimientos y jugabilidad libre)
+    // Modo de juego: 'mission' (perseguir al choro) o 'practice' (sandbox)
     const [gameMode, setGameMode] = useState<'mission' | 'practice'>('mission');
     const [dummyActive, setDummyActive] = useState<boolean>(true);
     const [activeActionName, setActiveActionName] = useState<string>('IDLE');
-    const [gameSpeed, setGameSpeed] = useState<number>(0.75); // 0.75x por defecto: ritmo clásico de beat 'em up
+    const [gameSpeed, setGameSpeed] = useState<number>(0.75);
     const [hitCount, setHitCount] = useState<number>(0);
     const [isMusicPlaying, setIsMusicPlaying] = useState<boolean>(false);
     const [isPlayerDead, setIsPlayerDead] = useState<boolean>(false);
     const [showActionBar, setShowActionBar] = useState<boolean>(true);
 
+    // Estado de Supervivencia Limeña (Vida, Cansancio, Hambre)
+    const [survivalStats, setSurvivalStats] = useState<SurvivalStats>({
+        vida: 100,
+        cansancio: 0,
+        hambre: 100,
+        isFatigued: false,
+        isStarving: false,
+        hasPoncho: false,
+        ponchoTimeLeft: 0,
+        speedBuff: 1.0,
+        speedBuffTimeLeft: 0,
+        stunTimeLeft: 0
+    });
+
     // Estado del juego
     const [gameState, setGameState] = useState<'intro' | 'playing' | 'qte' | 'win' | 'gameover'>('playing');
-    const [distanceToThief, setDistanceToThief] = useState<number>(35); // metros
+    const [gameOverReason, setGameOverReason] = useState<'dead' | 'escaped'>('escaped');
+    const [distanceToThief, setDistanceToThief] = useState<number>(35);
     const [totalDistance, setTotalDistance] = useState<number>(0);
-    const [lives, setLives] = useState<number>(3);
     const [qteKeys] = useState<string[]>(['ArrowUp', 'ArrowDown', 'ArrowRight']);
     const [qteIndex, setQteIndex] = useState<number>(0);
     const [qteTimeLeft, setQteTimeLeft] = useState<number>(3);
@@ -216,21 +231,22 @@ export default function CapituloUnoPage() {
 
     // Gestión del Quick Time Event (Combate al alcanzarlo)
     const handleQteFail = useCallback(() => {
-        setLives((prev) => {
-            const next = prev - 1;
-            if (next <= 0) {
+        setSurvivalStats((prev) => {
+            const nextHp = Math.max(0, prev.vida - 35);
+            if (nextHp <= 0) {
                 pixiRef.current?.triggerDeath();
                 setTimeout(() => {
+                    setGameOverReason('dead');
                     setGameState('gameover');
                 }, 1000);
             } else {
-                setQteMessage('¡El choro te golpeó y escapó más adelante!');
+                setQteMessage('¡El choro te encajó un cabezazo y sacó ventaja!');
                 setTimeout(() => {
-                    setDistanceToThief(45);
+                    setDistanceToThief(42);
                     setGameState('playing');
                 }, 1200);
             }
-            return next;
+            return { ...prev, vida: nextHp };
         });
     }, []);
 
@@ -303,7 +319,6 @@ export default function CapituloUnoPage() {
         pixiRef.current?.resetPosition();
         setDistanceToThief(35);
         setTotalDistance(0);
-        setLives(3);
         setGameState('playing');
     };
 
@@ -323,9 +338,13 @@ export default function CapituloUnoPage() {
                     setDistanceToThief(d);
                     setTotalDistance(total);
                 }}
-                onGameOver={() => setGameState('gameover')}
+                onGameOver={(reason) => {
+                    setGameOverReason(reason);
+                    setGameState('gameover');
+                }}
                 onCatchThief={startQte}
                 onPlayerDeadChange={setIsPlayerDead}
+                onStatsChange={setSurvivalStats}
             />
 
             {/* Barra Superior / HUD Principal */}
@@ -357,21 +376,102 @@ export default function CapituloUnoPage() {
                         </button>
                     </div>
 
-                    {/* Vidas (solo en misión) */}
-                    {gameMode === 'mission' && (
-                        <div className="flex gap-1.5 bg-black/70 border border-gray-700 px-3 py-1.5 rounded w-fit pointer-events-auto">
-                            {[1, 2, 3].map((heartIndex) => (
-                                <span
-                                    key={heartIndex}
-                                    className={`text-lg transition-transform ${
-                                        heartIndex <= lives ? 'opacity-100 scale-100' : 'opacity-25 grayscale scale-90'
-                                    }`}
-                                >
-                                    ❤️
+                    {/* BARRAS DE SUPERVIVENCIA LIMEÑA: VIDA, CANSANCIO, HAMBRE */}
+                    <div className="flex flex-col gap-1.5 bg-[#0d0e15]/92 border border-gray-700/80 p-2.5 rounded-xl shadow-2xl backdrop-blur-md min-w-[250px] pointer-events-auto">
+                        {/* Barra de Vida */}
+                        <div className="flex flex-col gap-0.5">
+                            <div className="flex justify-between items-center text-[10px] font-black">
+                                <span className="flex items-center gap-1 text-red-400">
+                                    <Heart size={12} className="fill-red-500 text-red-500 animate-pulse" />
+                                    <span>VIDA</span>
                                 </span>
-                            ))}
+                                <span className="text-white font-mono">{Math.round(survivalStats.vida)} / 100</span>
+                            </div>
+                            <div className="w-full bg-gray-900 border border-red-950 h-2.5 rounded-full overflow-hidden p-0.5">
+                                <div
+                                    className="h-full bg-gradient-to-r from-red-600 via-rose-500 to-red-400 rounded-full transition-all duration-150 shadow-[0_0_8px_rgba(239,68,68,0.5)]"
+                                    style={{ width: `${Math.max(0, Math.min(100, survivalStats.vida))}%` }}
+                                />
+                            </div>
                         </div>
-                    )}
+
+                        {/* Barra de Cansancio / Fatiga */}
+                        <div className="flex flex-col gap-0.5">
+                            <div className="flex justify-between items-center text-[10px] font-black">
+                                <span className="flex items-center gap-1 text-amber-400">
+                                    <Zap size={12} className="fill-amber-400 text-amber-400" />
+                                    <span>CANSANCIO</span>
+                                    {survivalStats.isFatigued && (
+                                        <span className="bg-red-600 text-white text-[8px] px-1 rounded animate-bounce">
+                                            ¡FATIGADO!
+                                        </span>
+                                    )}
+                                </span>
+                                <span className="text-white font-mono">{Math.round(survivalStats.cansancio)}%</span>
+                            </div>
+                            <div className="w-full bg-gray-900 border border-amber-950 h-2.5 rounded-full overflow-hidden p-0.5">
+                                <div
+                                    className={`h-full rounded-full transition-all duration-150 ${
+                                        survivalStats.isFatigued
+                                            ? 'bg-gradient-to-r from-red-500 to-amber-500 animate-pulse'
+                                            : 'bg-gradient-to-r from-amber-600 via-yellow-500 to-amber-400'
+                                    }`}
+                                    style={{ width: `${Math.max(0, Math.min(100, survivalStats.cansancio))}%` }}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Barra de Hambre */}
+                        <div className="flex flex-col gap-0.5">
+                            <div className="flex justify-between items-center text-[10px] font-black">
+                                <span className="flex items-center gap-1 text-emerald-400">
+                                    <Utensils size={12} className="text-emerald-400" />
+                                    <span>HAMBRE</span>
+                                    {survivalStats.isStarving && (
+                                        <span className="bg-red-600 text-white text-[8px] px-1 rounded animate-pulse">
+                                            ¡INANICIÓN!
+                                        </span>
+                                    )}
+                                </span>
+                                <span className="text-white font-mono">{Math.round(survivalStats.hambre)}%</span>
+                            </div>
+                            <div className="w-full bg-gray-900 border border-emerald-950 h-2.5 rounded-full overflow-hidden p-0.5">
+                                <div
+                                    className={`h-full rounded-full transition-all duration-150 ${
+                                        survivalStats.hambre <= 20
+                                            ? 'bg-gradient-to-r from-red-600 to-orange-500 animate-pulse'
+                                            : 'bg-gradient-to-r from-emerald-600 via-green-500 to-teal-400'
+                                    }`}
+                                    style={{ width: `${Math.max(0, Math.min(100, survivalStats.hambre))}%` }}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Badges de Efectos Activos (Poncho, Maca Turbo, Resbalón) */}
+                        {(survivalStats.hasPoncho || survivalStats.speedBuffTimeLeft > 0) && (
+                            <div className="flex flex-wrap gap-1 pt-1 border-t border-gray-800">
+                                {survivalStats.hasPoncho && (
+                                    <span className="bg-sky-950 border border-sky-400 text-sky-200 text-[9px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1 shadow">
+                                        <Shield size={10} className="text-sky-400" />
+                                        <span>PONCHO ESCUDO ({Math.ceil(survivalStats.ponchoTimeLeft)}s)</span>
+                                    </span>
+                                )}
+                                {survivalStats.speedBuffTimeLeft > 0 && (
+                                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1 shadow ${
+                                        survivalStats.speedBuff > 1
+                                            ? 'bg-yellow-950 border border-yellow-400 text-yellow-200'
+                                            : 'bg-orange-950 border border-orange-400 text-orange-200'
+                                    }`}>
+                                        <span>
+                                            {survivalStats.speedBuff > 1
+                                                ? `⚡ TURBO MACA (${Math.ceil(survivalStats.speedBuffTimeLeft)}s)`
+                                                : `💩 RESBALÓN (${Math.ceil(survivalStats.speedBuffTimeLeft)}s)`}
+                                        </span>
+                                    </span>
+                                )}
+                            </div>
+                        )}
+                    </div>
 
                     {/* Badge en modo práctica */}
                     {gameMode === 'practice' && (
@@ -429,7 +529,7 @@ export default function CapituloUnoPage() {
                         <>
                             <div
                                 className={`px-4 py-2 rounded border-2 shadow-xl text-right transition-colors ${
-                                    distanceToThief > 75
+                                    distanceToThief > 115
                                         ? 'bg-red-950/90 border-red-500 animate-pulse'
                                         : distanceToThief <= 10
                                         ? 'bg-yellow-950/90 border-yellow-400'
@@ -439,7 +539,7 @@ export default function CapituloUnoPage() {
                                 <div className="text-[9px] text-gray-400 uppercase tracking-widest">Distancia al Choro</div>
                                 <div className="text-xl font-black text-yellow-400">
                                     {distanceToThief} m
-                                    <span className="text-[10px] text-gray-300 ml-1">/ 100m máx</span>
+                                    <span className="text-[10px] text-gray-300 ml-1">/ 150m máx</span>
                                 </div>
                             </div>
 
@@ -519,6 +619,16 @@ export default function CapituloUnoPage() {
                             <span>Saltar (Espacio)</span>
                         </button>
 
+                        {/* Botón Agacharse */}
+                        <button
+                            onClick={() => pixiRef.current?.duck()}
+                            className="bg-[#171923] hover:bg-[#222533] border border-gray-700 text-gray-200 hover:text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+                            title="Presiona S o Flecha Abajo para agacharte"
+                        >
+                            <ArrowDown size={14} className="text-sky-400" />
+                            <span>Agacharse (S/↓)</span>
+                        </button>
+
                         {/* Botón Atacar */}
                         <button
                             onClick={() => pixiRef.current?.triggerAttack()}
@@ -557,6 +667,46 @@ export default function CapituloUnoPage() {
                         >
                             <Skull size={14} className={isPlayerDead ? 'text-amber-400' : 'text-red-400'} />
                             <span>{isPlayerDead ? '¡Levantarse!' : 'Probar Muerte (M)'}</span>
+                        </button>
+
+                        {/* Botón Comer */}
+                        <button
+                            onClick={() => pixiRef.current?.triggerEat()}
+                            className="bg-[#181926] hover:bg-[#232538] border border-yellow-600/50 text-yellow-300 hover:text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+                            title="Probar animación Comer (Snack)"
+                        >
+                            <Utensils size={14} className="text-yellow-400" />
+                            <span>Comer</span>
+                        </button>
+
+                        {/* Botón Beber */}
+                        <button
+                            onClick={() => pixiRef.current?.triggerDrink()}
+                            className="bg-[#181926] hover:bg-[#232538] border border-teal-600/50 text-teal-300 hover:text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+                            title="Probar animación Beber (Emoliente/Maca)"
+                        >
+                            <Volume2 size={14} className="text-teal-400" />
+                            <span>Beber</span>
+                        </button>
+
+                        {/* Botón Cansancio */}
+                        <button
+                            onClick={() => pixiRef.current?.triggerFatigue()}
+                            className="bg-[#181926] hover:bg-[#232538] border border-orange-600/50 text-orange-300 hover:text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+                            title="Probar animación Cansancio / Fatiga extrema"
+                        >
+                            <Zap size={14} className="text-orange-400" />
+                            <span>Cansancio</span>
+                        </button>
+
+                        {/* Botón Hambre */}
+                        <button
+                            onClick={() => pixiRef.current?.triggerHunger()}
+                            className="bg-[#181926] hover:bg-[#232538] border border-rose-600/50 text-rose-300 hover:text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+                            title="Probar animación Hambre / Inanición"
+                        >
+                            <Flame size={14} className="text-rose-400" />
+                            <span>Hambre</span>
                         </button>
 
                         {/* Toggle Muñeco Dummy */}
@@ -599,29 +749,28 @@ export default function CapituloUnoPage() {
 
             {/* Guía de Controles Inferior (Modo Misión) */}
             {gameMode === 'mission' && (
-                <div className="absolute bottom-4 left-6 pointer-events-none z-20 hidden md:flex items-center gap-4 bg-black/75 border border-gray-700 px-4 py-2 rounded-lg text-xs text-gray-300 backdrop-blur">
+                <div className="absolute bottom-4 left-6 pointer-events-none z-20 hidden md:flex flex-wrap items-center gap-3 bg-black/80 border border-gray-700 px-4 py-2 rounded-xl text-xs text-gray-300 backdrop-blur shadow-2xl">
                     <div>
-                        <span className="bg-gray-800 border border-gray-600 px-1.5 py-0.5 rounded text-white font-bold">
-                            A
-                        </span>{' '}
-                        <span className="bg-gray-800 border border-gray-600 px-1.5 py-0.5 rounded text-white font-bold">
-                            D
-                        </span>{' '}
+                        <span className="bg-gray-800 border border-gray-600 px-1.5 py-0.5 rounded text-white font-bold">A/D</span>{' '}
+                        Caminar
+                    </div>
+                    <div>
+                        <span className="bg-gray-800 border border-gray-600 px-1.5 py-0.5 rounded text-white font-bold">SHIFT</span>{' '}
                         Correr
                     </div>
                     <div>
-                        <span className="bg-gray-800 border border-gray-600 px-1.5 py-0.5 rounded text-white font-bold">
-                            ESPACIO
-                        </span>{' '}
+                        <span className="bg-gray-800 border border-gray-600 px-1.5 py-0.5 rounded text-white font-bold">ESPACIO</span>{' '}
                         Saltar
                     </div>
                     <div>
-                        <span className="bg-gray-800 border border-gray-600 px-1.5 py-0.5 rounded text-white font-bold">
-                            J
-                        </span>{' '}
+                        <span className="bg-gray-800 border border-gray-600 px-1.5 py-0.5 rounded text-white font-bold">S / ↓</span>{' '}
+                        Agacharse
+                    </div>
+                    <div>
+                        <span className="bg-gray-800 border border-gray-600 px-1.5 py-0.5 rounded text-white font-bold">J</span>{' '}
                         Atacar
                     </div>
-                    <div className="text-yellow-400 font-bold">🎯 Acércate a menos de 5m para recuperar tu celular</div>
+                    <div className="text-amber-400 font-bold">⚡ ¡No dejes que pase los 150m o se fuga!</div>
                 </div>
             )}
 
@@ -664,18 +813,48 @@ export default function CapituloUnoPage() {
 
             {/* Pantalla Game Over */}
             {gameState === 'gameover' && (
-                <div className="absolute inset-0 bg-black/90 flex flex-col items-center justify-center z-50 p-6 text-center">
-                    <div className="bg-[#1f0507] border-2 border-[#e62329] p-8 rounded-xl max-w-md w-full shadow-2xl">
-                        <h2 className="text-3xl font-black text-[#e62329] mb-2 uppercase tracking-wider">¡TE FALTO CALLE!</h2>
-                        <p className="text-sm text-gray-300 mb-6">
-                            El choro dobló por Grau y se perdió en el gentío con tu celular.
-                        </p>
+                <div className="absolute inset-0 bg-black/90 flex flex-col items-center justify-center z-50 p-6 text-center animate-in fade-in duration-300">
+                    <div className="bg-[#1a080a] border-2 border-[#e62329] p-8 rounded-2xl max-w-lg w-full shadow-2xl shadow-red-950/80">
+                        {gameOverReason === 'escaped' ? (
+                            <>
+                                <div className="text-4xl mb-2">🏃💨💨</div>
+                                <h2 className="text-2xl sm:text-3xl font-black text-[#e62329] mb-2 uppercase tracking-wider">
+                                    ¡EL CHORO SE FUGÓ, SANO!
+                                </h2>
+                                <p className="text-sm text-gray-200 mb-4 leading-relaxed font-sans">
+                                    ¡Para la siguiente no seas tan lenteja, compare! Te quedaste hueveando mirando los cerros y el piraña ya chapó su mototaxi.
+                                </p>
+                                <div className="bg-black/60 border border-red-900/60 p-3 rounded-xl mb-6 text-xs text-amber-300 font-mono text-left">
+                                    <p className="font-bold text-red-400 mb-1">📋 REPORTE DE SERENAZGO:</p>
+                                    <p>• Ahorita tu Xiaomi ya está formateado en Las Malvinas con chip Robistar.</p>
+                                    <p>• El piraña te sacó más de 150 metros de ventaja trotando en chancletas.</p>
+                                    <p>• Te fuiste descalzo, sin pasaje y con la moral por los suelos.</p>
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                <div className="text-4xl mb-2">💀🪦</div>
+                                <h2 className="text-2xl sm:text-3xl font-black text-[#e62329] mb-2 uppercase tracking-wider">
+                                    ¡QUEDASTE TIESO EN LA PISTA!
+                                </h2>
+                                <p className="text-sm text-gray-200 mb-4 leading-relaxed font-sans">
+                                    ¡Te desmayaste por falta de comida y fatiga extrema! Pasó una combi de la 50 raspándote las tabas y el sereno te decomisó la billetera por desacato.
+                                </p>
+                                <div className="bg-black/60 border border-red-900/60 p-3 rounded-xl mb-6 text-xs text-amber-300 font-mono text-left">
+                                    <p className="font-bold text-red-400 mb-1">📋 DIAGNÓSTICO CALLEJERO:</p>
+                                    <p>• Hambre en cero: ¿Por qué no te comiste un anticucho o una canchita?</p>
+                                    <p>• Fatiga al 100%: Debiste clavarte un emoliente caliente antes de desmayarte.</p>
+                                    <p>• Te faltó calle, causita. ¡Bienvenido a Lima la gris!</p>
+                                </div>
+                            </>
+                        )}
+
                         <div className="flex flex-col gap-3">
                             <button
                                 onClick={resetGame}
-                                className="bg-[#e62329] hover:bg-red-700 text-white font-bold text-xs px-4 py-3 rounded uppercase transition-colors shadow-lg cursor-pointer"
+                                className="bg-[#e62329] hover:bg-red-700 text-white font-black text-xs px-5 py-3 rounded-xl uppercase transition-all shadow-lg shadow-red-900/40 cursor-pointer active:scale-95"
                             >
-                                Intentar de Nuevo
+                                Intentar de Nuevo (Venganza)
                             </button>
                             <button
                                 onClick={() => {
@@ -683,15 +862,15 @@ export default function CapituloUnoPage() {
                                     pixiRef.current?.resetPosition();
                                     setGameState('playing');
                                 }}
-                                className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-4 py-3 rounded uppercase cursor-pointer"
+                                className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-4 py-3 rounded-xl uppercase cursor-pointer transition-colors"
                             >
-                                Modo Práctica
+                                Entrenar en Modo Práctica (Sandbox)
                             </button>
                             <Link
                                 href="/"
-                                className="border border-gray-600 text-gray-300 hover:bg-gray-800 font-bold text-xs px-4 py-3 rounded"
+                                className="border border-gray-700 text-gray-400 hover:text-white hover:bg-white/5 font-bold text-xs px-4 py-2.5 rounded-xl transition-colors"
                             >
-                                Salir al Menú
+                                Salir al Menú Principal
                             </Link>
                         </div>
                     </div>
