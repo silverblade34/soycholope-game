@@ -1,6 +1,6 @@
 {
   "characterName": "ladron",
-  "updatedAt": "2026-09-25T22:29:36.973Z",
+  "updatedAt": "2026-09-26T00:21:11.968Z",
   "actions": {
     "correr": {
       "name": "correr",
@@ -17,11 +17,17 @@
       "totalHeight": 724,
       "frameOverrides": {
         "1": {
-          "x": 423
+          "x": 428
         },
         "2": {
-          "x": 850,
+          "x": 848,
           "width": 454
+        },
+        "3": {
+          "x": 1312
+        },
+        "4": {
+          "x": 1726
         }
       },
       "spriteSheet": "/sprites/ladron/correr/correr.png",
@@ -35,6 +41,31 @@
         "/sprites/ladron/correr/frames/frame_5.png"
       ]
     },
+    "idle": {
+      "name": "idle",
+      "label": "IDLE (ESPERA)",
+      "frameCount": 5,
+      "frameWidth": 434,
+      "frameHeight": 724,
+      "offsetX": 0,
+      "offsetY": 0,
+      "spacing": 0,
+      "fps": 6,
+      "loop": true,
+      "totalWidth": 2170,
+      "totalHeight": 724,
+      "frameOverrides": {},
+      "spriteSheet": "/sprites/ladron/idle/idle.png",
+      "spriteSheetRoot": "/sprites/ladron/idle.png",
+      "gif": "/sprites/ladron/idle/idle.gif",
+      "frames": [
+        "/sprites/ladron/idle/frames/frame_1.png",
+        "/sprites/ladron/idle/frames/frame_2.png",
+        "/sprites/ladron/idle/frames/frame_3.png",
+        "/sprites/ladron/idle/frames/frame_4.png",
+        "/sprites/ladron/idle/frames/frame_5.png"
+      ]
+    },
     "atacar": {
       "name": "atacar",
       "label": "ATACAR",
@@ -45,7 +76,7 @@
       "offsetY": 0,
       "spacing": 0,
       "fps": 12,
-      "loop": false,
+      "loop": true,
       "totalWidth": 2445,
       "totalHeight": 724,
       "frameOverrides": {
