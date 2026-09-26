@@ -40,7 +40,7 @@ export interface PixiGameCanvasProps {
 
 const V_WIDTH = 960;
 const V_HEIGHT = 540;
-const GROUND_Y = 475; // Nivel de la pista/calle donde tocan las zapatillas
+const GROUND_Y = 482; // Nivel del pavimento/calle donde tocan las zapatillas
 
 export const PixiGameCanvas = forwardRef<PixiGameCanvasRef, PixiGameCanvasProps>(function PixiGameCanvas(
     {
@@ -170,7 +170,7 @@ export const PixiGameCanvas = forwardRef<PixiGameCanvasRef, PixiGameCanvasProps>
             hitFlash: 0,
             bobbing: 0,
             runCycle: 0,
-            currentAction: 'correr',
+            currentAction: 'idle',
             animTimer: 0
         },
         particles: [] as { x: number; y: number; vx: number; vy: number; life: number; color: number }[],
@@ -505,7 +505,7 @@ export const PixiGameCanvas = forwardRef<PixiGameCanvasRef, PixiGameCanvasProps>
             );
 
             // Cargar frames del Ladrón (Choro)
-            const thiefActions = ['correr', 'atacar'];
+            const thiefActions = ['idle', 'correr', 'atacar'];
             const thiefTextures: Record<string, Texture[]> = {};
 
             await Promise.all(
@@ -533,7 +533,7 @@ export const PixiGameCanvas = forwardRef<PixiGameCanvasRef, PixiGameCanvasProps>
             try {
                 thiefCharTex = await Assets.load(`/sprites/${thiefChar}/character.png`);
             } catch {
-                thiefCharTex = thiefTextures['correr'][0] || Texture.WHITE;
+                thiefCharTex = thiefTextures['idle']?.[0] || thiefTextures['correr']?.[0] || Texture.WHITE;
             }
 
             if (isDestroyed) return;
@@ -541,20 +541,34 @@ export const PixiGameCanvas = forwardRef<PixiGameCanvasRef, PixiGameCanvasProps>
             // ==========================================
             // 2. CONSTRUCCIÓN DE CAPAS GRÁFICAS PIXI
             // ==========================================
-            // Capa 1: Cielo infinito
+            // Capa 1: Cielo infinito escalado a la altura virtual
+            const skyScale = V_HEIGHT / (skyTex.height || 724);
             const skySprite = new TilingSprite({
                 texture: skyTex,
                 width: V_WIDTH,
                 height: V_HEIGHT
             });
+            skySprite.tileScale.set(skyScale, skyScale);
             world.addChild(skySprite);
 
+            // Base de asfalto continuo de seguridad para el fondo inferior (evita cualquier fuga o transparencia)
+            const asphaltBase = new Graphics();
+            asphaltBase.rect(0, 470, V_WIDTH, 70);
+            asphaltBase.fill({ color: 0x414552 }); // Mismo color RGB (65, 69, 82) del asfalto de primer-plano.png
+            world.addChild(asphaltBase);
+
             // Capa 2: Calle y Casas (Primer plano)
+            // El contenido útil de primer-plano.png termina en la fila 688 (asfalto inferior).
+            // Escalando con 688, la fila 688 coincide exactamente con V_HEIGHT (540),
+            // eliminando los 35px de padding transparente inferior que causaban que la textura se repitiera verticalmente mostrando copas de árboles.
+            const streetContentHeight = 688;
+            const bgScale = V_HEIGHT / streetContentHeight;
             const streetSprite = new TilingSprite({
                 texture: streetTex,
                 width: V_WIDTH,
                 height: V_HEIGHT
             });
+            streetSprite.tileScale.set(bgScale, bgScale);
             world.addChild(streetSprite);
 
             // Capa 3: Sombras en el suelo
@@ -566,7 +580,7 @@ export const PixiGameCanvas = forwardRef<PixiGameCanvasRef, PixiGameCanvasProps>
             // Capa 4: Contenedor del Ladrón (Choro / Sparring Dummy)
             const thiefContainer = new Container();
             const thiefSprite = new Sprite(thiefCharTex);
-            thiefSprite.anchor.set(0.5, 0.90); // Anclado exactamente en las suelas de las zapatillas
+            thiefSprite.anchor.set(0.5, 0.91); // Suelas de las zapatillas del ladrón alineadas al pavimento
             thiefContainer.addChild(thiefSprite);
 
             // Badge indicador arriba del ladrón
@@ -589,7 +603,7 @@ export const PixiGameCanvas = forwardRef<PixiGameCanvasRef, PixiGameCanvasProps>
             // Capa 5: Contenedor de Rubén (Protagonista)
             const playerContainer = new Container();
             const playerSprite = new Sprite(playerTextures['idle'][0]);
-            playerSprite.anchor.set(0.5, 0.90); // Anclado exactamente en las suelas de las zapatillas
+            playerSprite.anchor.set(0.5, 0.95); // Suelas de las zapatillas de Rubén alineadas al pavimento
             playerContainer.addChild(playerSprite);
             world.addChild(playerContainer);
 
@@ -703,8 +717,14 @@ export const PixiGameCanvas = forwardRef<PixiGameCanvasRef, PixiGameCanvasProps>
                 // ------------------------------------------
                 // C. Físicas y Movimiento del Ladrón
                 // ------------------------------------------
-                st.thief.runCycle += 0.08 * timeScale;
-                st.thief.bobbing = Math.sin(st.thief.runCycle) * 1.8;
+                if (st.gameMode === 'mission') {
+                    st.thief.runCycle += 0.09 * timeScale;
+                    st.thief.bobbing = Math.sin(st.thief.runCycle) * 1.5;
+                } else {
+                    // En modo práctica (idle), respiración sutil y fluida (sin rebote estático)
+                    st.thief.runCycle += 0.03 * timeScale;
+                    st.thief.bobbing = Math.sin(st.thief.runCycle) * 0.5;
+                }
 
                 if (st.gameMode === 'mission') {
                     const relativeSpeed = st.player.vx - st.thief.speed;
@@ -734,8 +754,8 @@ export const PixiGameCanvas = forwardRef<PixiGameCanvasRef, PixiGameCanvasProps>
                 // ------------------------------------------
                 // D. Scroll de Parallax
                 // ------------------------------------------
-                skySprite.tilePosition.x = -(st.worldScrollX * 0.22);
-                streetSprite.tilePosition.x = -st.worldScrollX;
+                skySprite.tilePosition.x = -(st.worldScrollX * 0.22) / skyScale;
+                streetSprite.tilePosition.x = -st.worldScrollX / bgScale;
 
                 // ------------------------------------------
                 // E. Animación y Renderizado de Rubén (Protagonista)
@@ -841,8 +861,8 @@ export const PixiGameCanvas = forwardRef<PixiGameCanvasRef, PixiGameCanvasProps>
                         : st.thief.x;
 
                     // Determinar acción y frame del ladrón
-                    let thiefAction = 'correr';
-                    let thiefFps = 7.0;
+                    let thiefAction = 'idle';
+                    let thiefFps = 4.5;
                     let thiefFrameIndex = 0;
 
                     if (st.gameMode === 'mission') {
@@ -856,16 +876,21 @@ export const PixiGameCanvas = forwardRef<PixiGameCanvasRef, PixiGameCanvasProps>
                     } else {
                         // En modo práctica es sparring dummy
                         st.thief.facingRight = false; // Mirando hacia Rubén
-                        if (st.thief.hitFlash > 6) {
-                            thiefAction = 'atacar'; // Reacción de impacto/golpe
-                            thiefFrameIndex = 2;
+                        if (st.thief.hitFlash > 0) {
+                            thiefAction = 'atacar'; // Reacción de impacto con sus sprites de combate
+                            const hitProgress = Math.max(0, Math.min(1, (12 - st.thief.hitFlash) / 12));
+                            thiefFrameIndex = Math.min(4, Math.floor(hitProgress * 5));
                         } else {
-                            thiefAction = 'correr';
-                            thiefFrameIndex = 0; // Postura firme de combate
+                            // En espera: ciclo de animación idle continuo de sus sprites
+                            thiefAction = 'idle';
+                            thiefFps = 4.5;
+                            st.thief.animTimer += (dt * thiefFps) * st.gameSpeed;
+                            if (st.thief.animTimer >= 5) st.thief.animTimer %= 5;
+                            thiefFrameIndex = Math.floor(st.thief.animTimer) % 5;
                         }
                     }
 
-                    const thiefFrameList = thiefTextures[thiefAction] || thiefTextures['correr'];
+                    const thiefFrameList = thiefTextures[thiefAction] || thiefTextures['idle'] || thiefTextures['correr'] || [];
                     const curThiefTex = thiefFrameList[thiefFrameIndex] || thiefCharTex;
                     if (curThiefTex) {
                         thiefSprite.texture = curThiefTex;
@@ -896,9 +921,9 @@ export const PixiGameCanvas = forwardRef<PixiGameCanvasRef, PixiGameCanvasProps>
                         badgeText.text = '¡CHORO!';
                         badgeText.position.set(0, -110);
                     } else {
-                        badgeBg.roundRect(-55, -118, 110, 16, 4);
+                        badgeBg.roundRect(-50, -118, 100, 16, 4);
                         badgeBg.fill({ color: 0x059669 });
-                        badgeText.text = '🎯 SPARRING: LADRÓN';
+                        badgeText.text = 'SPARRING: LADRÓN';
                         badgeText.position.set(0, -110);
                     }
                 }

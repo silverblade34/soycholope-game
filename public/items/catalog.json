@@ -1,0 +1,301 @@
+[
+  {
+    "id": "hueco",
+    "name": "Hueco",
+    "label": "HUECO EN PISTA",
+    "category": "obstaculo",
+    "subCategory": "obstaculo_bajo",
+    "tier": "piso",
+    "frequency": "media",
+    "description": "Bache o zanja típica de pista limeña. Te detiene 0.5s y quita vida.",
+    "effects": {
+      "vidaDelta": -15,
+      "stunDuracion": 0.5,
+      "mechanicHint": "Saltar por encima",
+      "cansancioDelta": -5
+    },
+    "imageUrl": "/items/hueco.png",
+    "cropBox": {
+      "x": 71,
+      "y": 267,
+      "width": 365,
+      "height": 197
+    },
+    "updatedAt": "2026-09-26T03:32:49.004Z"
+  },
+  {
+    "id": "cono",
+    "name": "Cono",
+    "label": "CONO DE TRÁNSITO",
+    "category": "obstaculo",
+    "subCategory": "obstaculo_bajo",
+    "tier": "piso",
+    "frequency": "media",
+    "description": "Cono de obra o desvío. Provoca un trompicón y empuja hacia atrás.",
+    "effects": {
+      "vidaDelta": -5,
+      "mechanicHint": "Saltar o esquivar"
+    },
+    "imageUrl": "/items/cono.png",
+    "cropBox": {
+      "x": 497,
+      "y": 252,
+      "width": 169,
+      "height": 207
+    },
+    "updatedAt": "2026-09-26T03:32:56.830Z"
+  },
+  {
+    "id": "caca",
+    "name": "Caca",
+    "label": "CACA DE PERRO",
+    "category": "obstaculo",
+    "subCategory": "obstaculo_bajo",
+    "tier": "piso",
+    "frequency": "muy_frecuente",
+    "description": "Resbalón cómico en la vereda. Reduce 20% de velocidad y sube cansancio.",
+    "effects": {
+      "vidaDelta": 0,
+      "velocidadFactor": 0.8,
+      "velocidadDuracion": 2,
+      "cansancioDelta": 15,
+      "mechanicHint": "Saltar por encima"
+    },
+    "imageUrl": "/items/caca.png",
+    "cropBox": {
+      "x": 819,
+      "y": 290,
+      "width": 142,
+      "height": 155
+    },
+    "updatedAt": "2026-09-26T03:33:05.644Z"
+  },
+  {
+    "id": "basura",
+    "name": "Basura",
+    "label": "BOLSA DE BASURA",
+    "category": "obstaculo",
+    "subCategory": "obstaculo_bloqueo",
+    "tier": "piso",
+    "frequency": "media",
+    "description": "Montículo de basura en la esquina. Bloquea el paso y quita 10 de vida.",
+    "effects": {
+      "vidaDelta": -10,
+      "mechanicHint": "Saltar alto"
+    },
+    "imageUrl": "/items/basura.png",
+    "cropBox": {
+      "x": 1046,
+      "y": 262,
+      "width": 335,
+      "height": 203
+    },
+    "updatedAt": "2026-09-26T03:33:17.787Z"
+  },
+  {
+    "id": "cable",
+    "name": "Cable",
+    "label": "CABLE COLGANTE",
+    "category": "obstaculo",
+    "subCategory": "obstaculo_alto",
+    "tier": "alto",
+    "frequency": "media",
+    "description": "Cable clandestino o descolgado de poste. Te engancha y pierdes 1s de control.",
+    "effects": {
+      "vidaDelta": 0,
+      "stunDuracion": 1,
+      "mechanicHint": "Agacharse"
+    },
+    "imageUrl": "/items/cable.png",
+    "cropBox": {
+      "x": 57,
+      "y": 549,
+      "width": 374,
+      "height": 180
+    },
+    "updatedAt": "2026-09-26T03:33:32.147Z"
+  },
+  {
+    "id": "cordel",
+    "name": "Cordel",
+    "label": "CORDEL DE ROPA",
+    "category": "obstaculo",
+    "subCategory": "obstaculo_alto",
+    "tier": "alto",
+    "frequency": "media",
+    "description": "Tendedero cruzado entre callejones. Tropiezo cómico y -5 de vida.",
+    "effects": {
+      "vidaDelta": -5,
+      "stunDuracion": 1,
+      "mechanicHint": "Agacharse"
+    },
+    "imageUrl": "/items/cordel.png",
+    "cropBox": {
+      "x": 442,
+      "y": 555,
+      "width": 345,
+      "height": 174
+    },
+    "updatedAt": "2026-09-26T03:33:40.710Z"
+  },
+  {
+    "id": "emoliente",
+    "name": "Emoliente",
+    "label": "EMOLIENTE CALIENTE",
+    "category": "potenciador",
+    "subCategory": "bebida",
+    "tier": "medio",
+    "frequency": "media",
+    "description": "Bebida medicinal y relajante. Reduce 40% de cansancio de inmediato.",
+    "effects": {
+      "cansancioDelta": -40,
+      "mechanicHint": "Saltar sobre obstáculo"
+    },
+    "imageUrl": "/items/emoliente.png",
+    "cropBox": {
+      "x": 857,
+      "y": 546,
+      "width": 159,
+      "height": 202
+    },
+    "updatedAt": "2026-09-26T03:33:51.240Z"
+  },
+  {
+    "id": "maca",
+    "name": "Maca",
+    "label": "MACA PURA",
+    "category": "potenciador",
+    "subCategory": "bebida",
+    "tier": "alto",
+    "frequency": "rara",
+    "description": "Energizante andino supremo. Otorga +20% de velocidad por 5 segundos.",
+    "effects": {
+      "velocidadFactor": 1.2,
+      "velocidadDuracion": 5,
+      "cansancioDelta": -15,
+      "mechanicHint": "Salto alto de riesgo"
+    },
+    "imageUrl": "/items/maca.png",
+    "cropBox": {
+      "x": 1132,
+      "y": 546,
+      "width": 167,
+      "height": 207
+    },
+    "updatedAt": "2026-09-26T03:34:09.069Z"
+  },
+  {
+    "id": "chicha_morada",
+    "name": "Chicha Morada",
+    "label": "CHICHA MORADA",
+    "category": "potenciador",
+    "subCategory": "bebida",
+    "tier": "medio",
+    "frequency": "media",
+    "description": "Bebida nutritiva y refrescante de maíz morado. Recupera +15 de Vida.",
+    "effects": {
+      "vidaDelta": 15,
+      "cansancioDelta": -10,
+      "mechanicHint": "Salto coordinado"
+    },
+    "imageUrl": "/items/chicha_morada.png",
+    "cropBox": {
+      "x": 72,
+      "y": 828,
+      "width": 132,
+      "height": 200
+    },
+    "updatedAt": "2026-09-26T03:34:17.541Z"
+  },
+  {
+    "id": "anticucho",
+    "name": "Anticucho",
+    "label": "ANTICUCHO DE CORAZÓN",
+    "category": "potenciador",
+    "subCategory": "comida",
+    "tier": "medio",
+    "frequency": "media",
+    "description": "Snack tradicional con papa y ají. Sacia +25 de Hambre.",
+    "effects": {
+      "hambreDelta": 25,
+      "mechanicHint": "Salto coordinado"
+    },
+    "imageUrl": "/items/anticucho.png",
+    "cropBox": {
+      "x": 236,
+      "y": 824,
+      "width": 223,
+      "height": 202
+    },
+    "updatedAt": "2026-09-26T03:34:24.704Z"
+  },
+  {
+    "id": "pan_chicharron",
+    "name": "Pan con Chicharrón",
+    "label": "PAN CON CHICHARRÓN",
+    "category": "potenciador",
+    "subCategory": "comida",
+    "tier": "medio",
+    "frequency": "media",
+    "description": "Mega desayuno con camote y salsa criolla. +50 Hambre pero -10% Vel por 4s (pesado).",
+    "effects": {
+      "hambreDelta": 50,
+      "velocidadFactor": 0.9,
+      "velocidadDuracion": 4,
+      "mechanicHint": "Salto sobre obstáculo"
+    },
+    "imageUrl": "/items/pan_chicharron.png",
+    "cropBox": {
+      "x": 482,
+      "y": 844,
+      "width": 207,
+      "height": 174
+    },
+    "updatedAt": "2026-09-26T03:34:32.358Z"
+  },
+  {
+    "id": "cancha_serrana",
+    "name": "Cancha Serrana",
+    "label": "CANCHA SERRANA",
+    "category": "potenciador",
+    "subCategory": "comida",
+    "tier": "piso",
+    "frequency": "muy_frecuente",
+    "description": "Snack salado frecuente (tipo monedas de Mario). Rellena +10 de Hambre.",
+    "effects": {
+      "hambreDelta": 10,
+      "mechanicHint": "Recoger al correr"
+    },
+    "imageUrl": "/items/cancha_serrana.png",
+    "cropBox": {
+      "x": 707,
+      "y": 855,
+      "width": 224,
+      "height": 172
+    },
+    "updatedAt": "2026-09-26T03:34:38.183Z"
+  },
+  {
+    "id": "picarones",
+    "name": "Picarones",
+    "label": "PICARONES CON MIEL",
+    "category": "potenciador",
+    "subCategory": "comida",
+    "tier": "alto",
+    "frequency": "rara",
+    "description": "Delicia dulce peruana premium. +30 de Hambre y +15 de Vida.",
+    "effects": {
+      "hambreDelta": 30,
+      "vidaDelta": 15,
+      "mechanicHint": "Salto alto de riesgo"
+    },
+    "imageUrl": "/items/picarones.png",
+    "cropBox": {
+      "x": 942,
+      "y": 840,
+      "width": 210,
+      "height": 188
+    },
+    "updatedAt": "2026-09-26T03:34:44.306Z"
+  }
+]

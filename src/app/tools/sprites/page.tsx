@@ -9,7 +9,8 @@ import { SpriteSheetUploader } from '@/components/sprites/SpriteSheetUploader';
 import { SpriteSlicer } from '@/components/sprites/SpriteSlicer';
 import { AnimationPlayer } from '@/components/sprites/AnimationPlayer';
 import { FrameStrip } from '@/components/sprites/FrameStrip';
-import { Film, Download, Save, Gamepad2, User, Loader2, CheckCircle2, AlertCircle, Plus, Check, X } from 'lucide-react';
+import { Film, Download, Save, Gamepad2, User, Loader2, CheckCircle2, AlertCircle, Plus, Check, X, Package } from 'lucide-react';
+import { ItemExtractorStudio } from '@/components/items/ItemExtractorStudio';
 
 const DEFAULT_ENV_CHAR = process.env.NEXT_PUBLIC_DEFAULT_CHARACTER || 'ruben';
 
@@ -18,6 +19,15 @@ export default function SpriteStudioPage() {
     const [availableCharacters, setAvailableCharacters] = useState<string[]>([DEFAULT_ENV_CHAR]);
     const [isCreatingChar, setIsCreatingChar] = useState<boolean>(false);
     const [newCharName, setNewCharName] = useState<string>('');
+    const [studioMode, setStudioMode] = useState<'sprites' | 'items'>(() => {
+        if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('tab') === 'items' || params.get('mode') === 'items') {
+                return 'items';
+            }
+        }
+        return 'sprites';
+    });
 
     // Inicializar diccionario de acciones predeterminadas
     const [actions, setActions] = useState<Record<string, ActionConfig>>(() => {
@@ -614,8 +624,81 @@ export default function SpriteStudioPage() {
                 boxSizing: 'border-box'
             }}
         >
-            {/* Header / Barra Superior */}
-            <div
+            {/* Selector Superior de Modo: Sprites vs Obstáculos & Potenciadores */}
+            <div style={{ maxWidth: '1280px', margin: '0 auto 16px auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#131824', padding: '6px', borderRadius: '12px', border: '1px solid #1e293b' }}>
+                    <button
+                        onClick={() => setStudioMode('sprites')}
+                        style={{
+                            background: studioMode === 'sprites' ? '#f59e0b' : 'transparent',
+                            color: studioMode === 'sprites' ? '#000' : '#94a3b8',
+                            border: 'none',
+                            borderRadius: '8px',
+                            padding: '8px 16px',
+                            fontSize: '12px',
+                            fontWeight: 800,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease'
+                        }}
+                    >
+                        <Film size={15} />
+                        <span>Sprites de Personajes</span>
+                    </button>
+
+                    <button
+                        onClick={() => setStudioMode('items')}
+                        style={{
+                            background: studioMode === 'items' ? '#10b981' : 'transparent',
+                            color: studioMode === 'items' ? '#000' : '#94a3b8',
+                            border: 'none',
+                            borderRadius: '8px',
+                            padding: '8px 16px',
+                            fontSize: '12px',
+                            fontWeight: 800,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease'
+                        }}
+                    >
+                        <Package size={15} />
+                        <span>Obstáculos & Potenciadores IA</span>
+                    </button>
+                </div>
+
+                <Link
+                    href="/capitulos/1?mode=practice"
+                    style={{
+                        background: '#1e293b',
+                        color: '#fbbf24',
+                        border: '1px solid #334155',
+                        borderRadius: '10px',
+                        padding: '8px 16px',
+                        fontSize: '12px',
+                        fontWeight: 800,
+                        textDecoration: 'none',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                    }}
+                >
+                    <Gamepad2 size={16} />
+                    <span>Probar Juego</span>
+                </Link>
+            </div>
+
+            {studioMode === 'items' ? (
+                <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
+                    <ItemExtractorStudio />
+                </div>
+            ) : (
+                <>
+                    {/* Header / Barra Superior */}
+                    <div
                 style={{
                     maxWidth: '1280px',
                     margin: '0 auto 24px auto',
@@ -947,6 +1030,8 @@ export default function SpriteStudioPage() {
                     </div>
                 </div>
             </div>
+            </>
+            )}
         </div>
     );
 }

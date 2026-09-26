@@ -17,7 +17,10 @@ import {
     Target,
     Volume2,
     VolumeX,
-    Gauge
+    Gauge,
+    ChevronDown,
+    ChevronUp,
+    SlidersHorizontal
 } from 'lucide-react';
 import type { PixiGameCanvasRef } from '@/components/game/PixiGameCanvas';
 
@@ -160,6 +163,7 @@ export default function CapituloUnoPage() {
     const [hitCount, setHitCount] = useState<number>(0);
     const [isMusicPlaying, setIsMusicPlaying] = useState<boolean>(false);
     const [isPlayerDead, setIsPlayerDead] = useState<boolean>(false);
+    const [showActionBar, setShowActionBar] = useState<boolean>(true);
 
     // Estado del juego
     const [gameState, setGameState] = useState<'intro' | 'playing' | 'qte' | 'win' | 'gameover'>('playing');
@@ -281,6 +285,11 @@ export default function CapituloUnoPage() {
             // Atajo de Música (B)
             if (e.code === 'KeyB') {
                 toggleMusic();
+            }
+
+            // Atajo para alternar barra de acciones (C)
+            if (e.code === 'KeyC') {
+                setShowActionBar((prev) => !prev);
             }
         };
 
@@ -470,99 +479,122 @@ export default function CapituloUnoPage() {
 
             {/* DOCK INFERIOR: Botones de Prueba de Acciones (Modo Práctica) */}
             {gameMode === 'practice' && (
-                <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-20 flex flex-wrap items-center justify-center gap-2 bg-[#0c0d14]/90 border border-emerald-500/30 p-2 px-4 rounded-2xl shadow-2xl backdrop-blur-md">
-                    {/* Indicador de Acción Activa */}
-                    <div className="flex items-center gap-1.5 bg-[#171a29] border border-gray-700/80 px-3 py-1.5 rounded-xl mr-1">
-                        <span className="text-[10px] text-gray-400 uppercase tracking-widest">Acción:</span>
-                        <span className="text-xs font-black text-emerald-400 uppercase tracking-wider">
-                            {activeActionName}
-                        </span>
+                showActionBar ? (
+                    <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-20 flex flex-wrap items-center justify-center gap-2 bg-[#0c0d14]/92 border border-emerald-500/35 p-2 px-4 rounded-2xl shadow-2xl backdrop-blur-md transition-all animate-in fade-in duration-200">
+                        {/* Indicador de Acción Activa */}
+                        <div className="flex items-center gap-1.5 bg-[#171a29] border border-gray-700/80 px-3 py-1.5 rounded-xl mr-1">
+                            <span className="text-[10px] text-gray-400 uppercase tracking-widest">Acción:</span>
+                            <span className="text-xs font-black text-emerald-400 uppercase tracking-wider">
+                                {activeActionName}
+                            </span>
+                        </div>
+
+                        {/* Botón Caminar */}
+                        <button
+                            onClick={() => pixiRef.current?.stepWalk()}
+                            className="bg-[#171923] hover:bg-[#222533] border border-gray-700 text-gray-200 hover:text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+                            title="Presiona A o D para caminar"
+                        >
+                            <Footprints size={14} className="text-cyan-400" />
+                            <span>Caminar (A/D)</span>
+                        </button>
+
+                        {/* Botón Correr */}
+                        <button
+                            onClick={() => pixiRef.current?.stepRun()}
+                            className="bg-[#171923] hover:bg-[#222533] border border-gray-700 text-gray-200 hover:text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+                            title="Mantén Shift mientras caminas para correr"
+                        >
+                            <Zap size={14} className="text-yellow-400" />
+                            <span>Correr (Shift)</span>
+                        </button>
+
+                        {/* Botón Saltar */}
+                        <button
+                            onClick={() => pixiRef.current?.jump()}
+                            className="bg-[#171923] hover:bg-[#222533] border border-gray-700 text-gray-200 hover:text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+                            title="Presiona Espacio o W para saltar"
+                        >
+                            <ArrowUp size={14} className="text-purple-400" />
+                            <span>Saltar (Espacio)</span>
+                        </button>
+
+                        {/* Botón Atacar */}
+                        <button
+                            onClick={() => pixiRef.current?.triggerAttack()}
+                            className="bg-red-950/70 hover:bg-red-900/90 border border-red-500/70 text-red-200 hover:text-white px-3.5 py-1.5 rounded-xl text-xs font-black flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-lg shadow-red-950/40"
+                            title="Presiona J, Z o haz clic en el canvas para golpear"
+                        >
+                            <Swords size={14} className="text-red-400 animate-pulse" />
+                            <span>¡Atacar! (J / Click)</span>
+                        </button>
+
+                        {/* Botón Daño */}
+                        <button
+                            onClick={() => pixiRef.current?.triggerDamage()}
+                            className="bg-[#181926] hover:bg-[#232538] border border-amber-600/50 text-amber-300 hover:text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+                            title="Presiona H para recibir daño"
+                        >
+                            <ShieldAlert size={14} className="text-amber-400" />
+                            <span>Probar Daño (H)</span>
+                        </button>
+
+                        {/* Botón Muerte / Levantarse */}
+                        <button
+                            onClick={() => {
+                                if (isPlayerDead) {
+                                    pixiRef.current?.revivePlayer();
+                                } else {
+                                    pixiRef.current?.triggerDeath();
+                                }
+                            }}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer ${
+                                isPlayerDead
+                                    ? 'bg-amber-950/80 border border-amber-500 text-amber-300 animate-bounce'
+                                    : 'bg-[#181216] hover:bg-[#241720] border border-red-800/60 text-red-300'
+                            }`}
+                            title="Presiona M para probar la animación de muerte o levantarse"
+                        >
+                            <Skull size={14} className={isPlayerDead ? 'text-amber-400' : 'text-red-400'} />
+                            <span>{isPlayerDead ? '¡Levantarse!' : 'Probar Muerte (M)'}</span>
+                        </button>
+
+                        {/* Toggle Muñeco Dummy */}
+                        <button
+                            onClick={() => setDummyActive(!dummyActive)}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                                dummyActive
+                                    ? 'bg-emerald-950/70 border border-emerald-500/60 text-emerald-300'
+                                    : 'bg-gray-900 border border-gray-700 text-gray-500'
+                            }`}
+                            title="Mostrar u ocultar ladrón de pruebas"
+                        >
+                            <Target size={14} />
+                            <span>Sparring: {dummyActive ? 'ON' : 'OFF'}</span>
+                        </button>
+
+                        {/* Botón Minimizar / Ocultar Barra */}
+                        <button
+                            onClick={() => setShowActionBar(false)}
+                            className="bg-black/60 hover:bg-black/90 border border-gray-700/80 hover:border-gray-500 text-gray-400 hover:text-white px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition-all active:scale-95 cursor-pointer ml-1"
+                            title="Ocultar barra de acciones para ver el movimiento completo (Tecla C)"
+                        >
+                            <ChevronDown size={14} />
+                            <span className="hidden sm:inline">Ocultar</span>
+                        </button>
                     </div>
-
-                    {/* Botón Caminar */}
+                ) : (
+                    /* Píldora compacta cuando la barra está oculta */
                     <button
-                        onClick={() => pixiRef.current?.stepWalk()}
-                        className="bg-[#171923] hover:bg-[#222533] border border-gray-700 text-gray-200 hover:text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
-                        title="Presiona A o D para caminar"
+                        onClick={() => setShowActionBar(true)}
+                        className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 bg-[#0c0d14]/90 hover:bg-[#151724] border border-emerald-500/50 hover:border-emerald-400 text-emerald-300 hover:text-white px-4 py-2 rounded-full text-xs font-bold flex items-center gap-2 shadow-2xl backdrop-blur-md transition-all active:scale-95 cursor-pointer group"
+                        title="Mostrar barra de acciones (Tecla C)"
                     >
-                        <Footprints size={14} className="text-cyan-400" />
-                        <span>Caminar (A/D)</span>
+                        <SlidersHorizontal size={13} className="text-emerald-400 group-hover:rotate-45 transition-transform" />
+                        <span>Ver Controles ({activeActionName})</span>
+                        <ChevronUp size={13} className="text-emerald-400" />
                     </button>
-
-                    {/* Botón Correr */}
-                    <button
-                        onClick={() => pixiRef.current?.stepRun()}
-                        className="bg-[#171923] hover:bg-[#222533] border border-gray-700 text-gray-200 hover:text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
-                        title="Mantén Shift mientras caminas para correr"
-                    >
-                        <Zap size={14} className="text-yellow-400" />
-                        <span>Correr (Shift)</span>
-                    </button>
-
-                    {/* Botón Saltar */}
-                    <button
-                        onClick={() => pixiRef.current?.jump()}
-                        className="bg-[#171923] hover:bg-[#222533] border border-gray-700 text-gray-200 hover:text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
-                        title="Presiona Espacio o W para saltar"
-                    >
-                        <ArrowUp size={14} className="text-purple-400" />
-                        <span>Saltar (Espacio)</span>
-                    </button>
-
-                    {/* Botón Atacar */}
-                    <button
-                        onClick={() => pixiRef.current?.triggerAttack()}
-                        className="bg-red-950/70 hover:bg-red-900/90 border border-red-500/70 text-red-200 hover:text-white px-3.5 py-1.5 rounded-xl text-xs font-black flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-lg shadow-red-950/40"
-                        title="Presiona J, Z o haz clic en el canvas para golpear"
-                    >
-                        <Swords size={14} className="text-red-400 animate-pulse" />
-                        <span>¡Atacar! (J / Click)</span>
-                    </button>
-
-                    {/* Botón Daño */}
-                    <button
-                        onClick={() => pixiRef.current?.triggerDamage()}
-                        className="bg-[#181926] hover:bg-[#232538] border border-amber-600/50 text-amber-300 hover:text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
-                        title="Presiona H para recibir daño"
-                    >
-                        <ShieldAlert size={14} className="text-amber-400" />
-                        <span>Probar Daño (H)</span>
-                    </button>
-
-                    {/* Botón Muerte / Levantarse */}
-                    <button
-                        onClick={() => {
-                            if (isPlayerDead) {
-                                pixiRef.current?.revivePlayer();
-                            } else {
-                                pixiRef.current?.triggerDeath();
-                            }
-                        }}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer ${
-                            isPlayerDead
-                                ? 'bg-amber-950/80 border border-amber-500 text-amber-300 animate-bounce'
-                                : 'bg-[#181216] hover:bg-[#241720] border border-red-800/60 text-red-300'
-                        }`}
-                        title="Presiona M para probar la animación de muerte o levantarse"
-                    >
-                        <Skull size={14} className={isPlayerDead ? 'text-amber-400' : 'text-red-400'} />
-                        <span>{isPlayerDead ? '¡Levantarse!' : 'Probar Muerte (M)'}</span>
-                    </button>
-
-                    {/* Toggle Muñeco Dummy */}
-                    <button
-                        onClick={() => setDummyActive(!dummyActive)}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                            dummyActive
-                                ? 'bg-emerald-950/70 border border-emerald-500/60 text-emerald-300'
-                                : 'bg-gray-900 border border-gray-700 text-gray-500'
-                        }`}
-                        title="Mostrar u ocultar ladrón de pruebas"
-                    >
-                        <Target size={14} />
-                        <span>Sparring: {dummyActive ? 'ON' : 'OFF'}</span>
-                    </button>
-                </div>
+                )
             )}
 
             {/* Guía de Controles Inferior (Modo Misión) */}
